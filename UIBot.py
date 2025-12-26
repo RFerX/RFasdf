@@ -29,6 +29,7 @@ class AppBotUI(ctk.CTk):
         self.entries = {}
         self.driver = None 
         self.is_running = False
+        self.tracking_timeout = {} # Mencatat waktu pertama kali baris ditemukan di memori
         self.setup_ui()
         self.load_config()
 
@@ -76,15 +77,19 @@ class AppBotUI(ctk.CTk):
         self.log_box = ctk.CTkTextbox(self, height=400, fg_color="black", text_color="#00FF00", font=("Consolas", 12))
         self.log_box.pack(fill="both", padx=10, pady=5, expand=True)
 
+    def add_log(self, message):
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        self.log_box.insert("end", f"[{timestamp}] {message}\n")
+        self.log_box.see("end")
+
     def handle_alerts(self):
+        """Menangani alert yang muncul secara tidak terduga"""
         try:
             WebDriverWait(self.driver, 1).until(EC.alert_is_present())
             alert = self.driver.switch_to.alert
-            self.add_log(f"Alert: {alert.text}")
+            self.add_log(f"Alert Otomatis: {alert.text}")
             alert.accept()
-            return True
-        except:
-            return False
+        except: pass
 
     def btn_open_browser(self):
         def open_logic():
@@ -98,34 +103,48 @@ class AppBotUI(ctk.CTk):
         threading.Thread(target=open_logic, daemon=True).start()
 
     def cari_dan_klik_web(self, nama_gs, nominal_gs_string):
+        """Mencari data di tabel web dan melakukan konfirmasi"""
         self.handle_alerts()
         try:
-            # Pembersihan nama lebih agresif dengan Regex (Hanya Huruf & Angka)
             nama_gs_bersih = re.sub(r'[^a-z0-9]', '', nama_gs.lower())
-            
             rows = self.driver.find_elements(By.CSS_SELECTOR, "table#report tbody tr[class^='Grid']")
             
             for row in rows:
                 try:
                     name_web = row.find_element(By.CLASS_NAME, "fromAccountName").text.strip()
                     amount_raw = row.find_element(By.CLASS_NAME, "amount").text.strip()
-                    # Ambil angka saja sebelum desimal
                     amount_web_clean = "".join(filter(str.isdigit, amount_raw.split('.')[0]))
                     username_web = row.find_element(By.CLASS_NAME, "username").text.strip()
 
                     name_web_bersih = re.sub(r'[^a-z0-9]', '', name_web.lower())
 
-                    # Logika Hajar (Nama Match & Nominal Match)
                     if nama_gs_bersih == name_web_bersih and nominal_gs_string == amount_web_clean:
                         btn_confirm = row.find_element(By.CLASS_NAME, "confirm").find_element(By.TAG_NAME, "input")
-                        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_confirm)
-                        time.sleep(0.3)
-                        btn_confirm.click()
                         
-                        self.add_log(f"MATCH! Klik: {name_web}")
-                        time.sleep(1)
-                        self.handle_alerts()
-                        return username_web
+                        # Scroll agar tombol terlihat di layar
+                        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_confirm)
+                        time.sleep(0.5)
+                        
+                        # Klik tombol Konfirmasi
+                        btn_confirm.click()
+                        self.add_log(f"Mencoba konfirmasi: {nama_gs}...")
+
+                        # --- MENANGANI POP-UP OK/CANCEL ---
+                        try:
+                            # Tunggu alert muncul max 5 detik
+                            WebDriverWait(self.driver, 5).until(EC.alert_is_present())
+                            alert = self.driver.switch_to.alert
+                            alert_text = alert.text
+                            alert.accept() # Klik OK
+                            self.add_log(f"Berhasil klik OK: {alert_text}")
+                            
+                            # Jeda agar sistem web memproses refresh status
+                            time.sleep(1)
+                            return username_web
+                        except:
+                            self.add_log("Gagal: Pop-up konfirmasi tidak muncul.")
+                            return None
+
                 except: continue
             return None
         except: return None
@@ -142,82 +161,87 @@ class AppBotUI(ctk.CTk):
 
         while self.is_running:
             try:
-                # 1. Refresh Halaman Web
-                try:
-                    btn_refresh = self.driver.find_element(By.ID, "btnRefresh")
-                    self.driver.execute_script("arguments[0].click();", btn_refresh)
-                    time.sleep(2)
-                except:
-                    self.driver.refresh()
-                    time.sleep(4)
-                
-                self.handle_alerts()
-
-                # 2. Ambil Snapshot Data Sheets
+                # 1. SCRAPE SPREADSHEET
                 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                 creds = ServiceAccountCredentials.from_json_keyfile_name(self.entries["JSON Path:"].get(), scope)
                 client = gspread.authorize(creds)
                 sheet = client.open_by_url(self.entries["Link Sheet:"].get()).worksheet(self.entries["Sheet Name:"].get())
                 
                 all_rows = sheet.get_all_values()
+                start_row = int(self.entries["Start Row"].get())
+                
                 n_idx = self.col_to_idx(self.entries["Nominal Col"].get())
                 u_idx = self.col_to_idx(self.entries["Username Col"].get())
                 s_idx = self.col_to_idx(self.entries["Status Col"].get())
                 name_idx = self.col_to_idx(self.entries["Name Col"].get())
-                start_row = int(self.entries["Start Row"].get())
                 
-                try: max_limit = int(self.entries["Max Nominal"].get())
-                except: max_limit = 999999999
+                try: timeout_limit_min = int(self.entries["Timeout (m)"].get())
+                except: timeout_limit_min = 10
                 
+                pending_queue = []
                 updates = []
-                found_work = False
 
-                # 3. Proses SEMUA baris yang diambil sampai tuntas
+                # --- KRITERIA FILTER ---
                 for i, row in enumerate(all_rows[start_row-1:], start=start_row):
-                    if not self.is_running: break
-                    
-                    nama_gs = row[name_idx].strip()
-                    status_gs = row[s_idx].strip()
-                    username_gs = row[u_idx].strip()
+                    nama = row[name_idx].strip()
+                    nominal_raw = row[n_idx].strip()
+                    username = row[u_idx].strip()
+                    status = row[s_idx].strip()
 
-                    # Lewati jika sudah diproses atau baris kosong
-                    if status_gs == "✅" or username_gs or not nama_gs:
-                        continue
-
-                    found_work = True
-                    raw_gs_val = row[n_idx].strip()
-                    # Regex untuk handle nominal agar bersih
-                    nominal_gs_string = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', raw_gs_val)[0]))
-
-                    if nominal_gs_string and int(nominal_gs_string) <= max_limit:
-                        res_user = self.cari_dan_klik_web(nama_gs, nominal_gs_string)
+                    if nama and nominal_raw and not username and not status:
+                        row_key = f"row_{i}_{nama}"
                         
-                        if res_user:
-                            # Masukkan ke list updates (Gunakan A1 notation agar tidak tertukar)
-                            updates.append({
-                                'range': gspread.utils.rowcol_to_a1(i, s_idx + 1),
-                                'values': [["✅"]]
-                            })
-                            updates.append({
-                                'range': gspread.utils.rowcol_to_a1(i, u_idx + 1),
-                                'values': [[res_user]]
-                            })
+                        if row_key not in self.tracking_timeout:
+                            self.tracking_timeout[row_key] = time.time()
+                        
+                        elapsed_min = (time.time() - self.tracking_timeout[row_key]) / 60
+                        
+                        if elapsed_min > timeout_limit_min:
+                            self.add_log(f"TIMEOUT: {nama} (Baris {i}) ditandai ❌.")
+                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
+                            if row_key in self.tracking_timeout: del self.tracking_timeout[row_key]
+                            continue
 
-                # 4. Kirim semua hasil match ke Sheets sekaligus
+                        nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
+                        pending_queue.append({
+                            "row": i, "nama": nama, "nominal": nominal_clean,
+                            "u_col": u_idx + 1, "s_col": s_idx + 1, "key": row_key
+                        })
+
+                # 2. PROSES KE WEB
+                if pending_queue:
+                    self.add_log(f"SCAN: {len(pending_queue)} data pending ditemukan.")
+                    
+                    try:
+                        btn_refresh = self.driver.find_element(By.ID, "btnRefresh")
+                        self.driver.execute_script("arguments[0].click();", btn_refresh)
+                        time.sleep(1.5)
+                    except:
+                        self.driver.refresh()
+                        time.sleep(3)
+                    
+                    self.handle_alerts()
+
+                    for item in pending_queue:
+                        if not self.is_running: break
+                        
+                        res_user = self.cari_dan_klik_web(item["nama"], item["nominal"])
+                        if res_user:
+                            self.add_log(f"MATCH! {item['nama']} Berhasil Direspon.")
+                            updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
+                            updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
+                            if item["key"] in self.tracking_timeout: del self.tracking_timeout[item["key"]]
+
+                # 3. BATCH UPDATE KE SHEETS
                 if updates:
                     sheet.batch_update(updates)
-                    self.add_log(f"Batch Update Berhasil: {len(updates)//2} baris.")
-
-                if not found_work:
-                    self.add_log("Data kosong. Menunggu 3 detik...")
-                else:
-                    self.add_log("Antrean selesai diproses. Scan ulang...")
-
+                    self.add_log(f"Spreadsheet Diperbarui: {len(updates)} sel.")
+                
                 time.sleep(3)
 
             except Exception as e:
-                self.add_log(f"Error: {str(e)}")
-                time.sleep(5)
+                self.add_log(f"Error Loop: {str(e)}")
+                time.sleep(3)
 
         self.btn_run.configure(state="normal")
 
@@ -232,11 +256,6 @@ class AppBotUI(ctk.CTk):
         if filename:
             self.entries["JSON Path:"].delete(0, "end")
             self.entries["JSON Path:"].insert(0, filename)
-
-    def add_log(self, message):
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-        self.log_box.insert("end", f"[{timestamp}] {message}\n")
-        self.log_box.see("end")
 
     def save_config(self):
         config_data = {key: entry.get() for key, entry in self.entries.items()}
@@ -257,10 +276,11 @@ class AppBotUI(ctk.CTk):
 
     def btn_start(self):
         if not self.driver:
-            self.add_log("Error: Buka Browser dulu!")
+            self.add_log("Buka Browser dulu!")
             return
         self.save_config()
         if not self.is_running:
+            self.tracking_timeout = {} 
             threading.Thread(target=self.main_loop, daemon=True).start()
 
     def btn_stop(self):
@@ -270,4 +290,3 @@ class AppBotUI(ctk.CTk):
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
-
