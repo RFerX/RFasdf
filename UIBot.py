@@ -270,3 +270,4 @@ class AppBotUI(ctk.CTk):
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
+
