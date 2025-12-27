@@ -127,7 +127,7 @@ class AppBotUI(ctk.CTk):
                         
                         # Klik tombol Konfirmasi
                         btn_confirm.click()
-                        self.add_log(f"Mencoba konfirmasi: {nama_gs}...")
+                        self.add_log(f"Mencoba Proses: {nama_gs}...")
 
                         # --- MENANGANI POP-UP OK/CANCEL ---
                         try:
@@ -136,13 +136,13 @@ class AppBotUI(ctk.CTk):
                             alert = self.driver.switch_to.alert
                             alert_text = alert.text
                             alert.accept() # Klik OK
-                            self.add_log(f"Berhasil klik OK: {alert_text}")
+                            self.add_log(f"Berhasil Proses: {alert_text}")
                             
                             # Jeda agar sistem web memproses refresh status
                             time.sleep(1)
                             return username_web
                         except:
-                            self.add_log("Gagal: Pop-up konfirmasi tidak muncul.")
+                            self.add_log("Gagal: Gagal Diproses.")
                             return None
 
                 except: continue
@@ -227,7 +227,7 @@ class AppBotUI(ctk.CTk):
                         
                         res_user = self.cari_dan_klik_web(item["nama"], item["nominal"])
                         if res_user:
-                            self.add_log(f"MATCH! {item['nama']} Berhasil Direspon.")
+                            self.add_log(f"COCOK! {item['nama']} Berhasil Diproses.")
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
                             if item["key"] in self.tracking_timeout: del self.tracking_timeout[item["key"]]
@@ -235,7 +235,7 @@ class AppBotUI(ctk.CTk):
                 # 3. BATCH UPDATE KE SHEETS
                 if updates:
                     sheet.batch_update(updates)
-                    self.add_log(f"Spreadsheet Diperbarui: {len(updates)} sel.")
+                    self.add_log(f"Username & Status Berhasil diUpdate.")
                 
                 time.sleep(3)
 
