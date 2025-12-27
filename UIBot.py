@@ -54,10 +54,23 @@ class AppBotUI(ctk.CTk):
             ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", ""), ("Timeout (m)", "10")
         ]        
         for i, (label, val) in enumerate(settings):
-            ctk.CTkLabel(self.adv_frame, text=label).grid(row=0, column=i*2, padx=5, pady=5)
+            row_idx = i // 4
+            col_idx = (i % 4) * 2
+            ctk.CTkLabel(self.adv_frame, text=label).grid(
+                row=row_idx, 
+                column=col_idx, 
+                padx=(10, 2), 
+                pady=10, 
+                sticky="w"
+            )
             entry_adv = ctk.CTkEntry(self.adv_frame, width=65)
             entry_adv.insert(0, val)
-            entry_adv.grid(row=0, column=i*2+1, padx=2)
+            entry_adv.grid(
+                row=row_idx, 
+                column=col_idx + 1, 
+                padx=(2, 10), 
+                pady=10
+            )
             self.entries[label] = entry_adv 
 
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -290,3 +303,4 @@ class AppBotUI(ctk.CTk):
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
+
