@@ -40,11 +40,14 @@ class AppBotUI(ctk.CTk):
         fields = ["Login URL:", "Deposit URL:", "Link Sheet:", "JSON Path:", "Sheet Name:"]
         for i, field in enumerate(fields):
             ctk.CTkLabel(self.config_frame, text=field).grid(row=i, column=0, padx=5, pady=2, sticky="e")
-            entry = ctk.CTkEntry(self.config_frame, width=550)
-            entry.grid(row=i, column=1, padx=5, pady=2, sticky="w")
-            self.entries[field] = entry
             if "JSON" in field:
-                ctk.CTkButton(self.config_frame, text="Browse", width=80, command=self.browse_json).grid(row=i, column=2, padx=5)
+                ctk.CTkButton(self.config_frame, text="Browse", width=80, command=self.browse_json).grid(row=i, column=1, padx=5)
+                entry = ctk.CTkEntry(self.config_frame, width=460) # Lebar disesuaikan agar tetap rapi
+                entry.grid(row=i, column=2, padx=5, pady=2, sticky="w")
+            else:
+                entry = ctk.CTkEntry(self.config_frame, width=550)
+                entry.grid(row=i, column=1, columnspan=2, padx=5, pady=2, sticky="w")
+            self.entries[field] = entry
 
         self.adv_frame = ctk.CTkFrame(self)
         self.adv_frame.pack(fill="x", padx=10, pady=5)
