@@ -29,7 +29,8 @@ class AppBotUI(ctk.CTk):
         self.entries = {}
         self.driver = None 
         self.is_running = False
-        self.tracking_timeout = {} # Mencatat waktu pertama kali baris ditemukan di memori
+        self.tracking_timeout = {} # Memori untuk Timeout
+        self.last_processed = {}   # Memori untuk Anti-Duplikat { "nama_nominal": timestamp }
         self.setup_ui()
         self.load_config()
 
@@ -42,7 +43,7 @@ class AppBotUI(ctk.CTk):
             ctk.CTkLabel(self.config_frame, text=field).grid(row=i, column=0, padx=5, pady=2, sticky="e")
             if "JSON" in field:
                 ctk.CTkButton(self.config_frame, text="Browse", width=80, command=self.browse_json).grid(row=i, column=1, padx=5)
-                entry = ctk.CTkEntry(self.config_frame, width=460) # Lebar disesuaikan agar tetap rapi
+                entry = ctk.CTkEntry(self.config_frame, width=460)
                 entry.grid(row=i, column=2, padx=5, pady=2, sticky="w")
             else:
                 entry = ctk.CTkEntry(self.config_frame, width=550)
@@ -52,28 +53,19 @@ class AppBotUI(ctk.CTk):
         self.adv_frame = ctk.CTkFrame(self)
         self.adv_frame.pack(fill="x", padx=10, pady=5)
         
+        # Menambahkan "Dup Time(m)" ke dalam settings
         settings = [
             ("Name Col", "A"), ("Nominal Col", "B"), ("Username Col", "C"), 
-            ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", ""), ("Timeout (m)", "10")
+            ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", ""), 
+            ("Time Out (m)", "10"), ("Dup Time(m)", "2")
         ]        
         for i, (label, val) in enumerate(settings):
             row_idx = i // 4
             col_idx = (i % 4) * 2
-            ctk.CTkLabel(self.adv_frame, text=label).grid(
-                row=row_idx, 
-                column=col_idx, 
-                padx=(10, 2), 
-                pady=10, 
-                sticky="w"
-            )
+            ctk.CTkLabel(self.adv_frame, text=label).grid(row=row_idx, column=col_idx, padx=(10, 2), pady=10, sticky="w")
             entry_adv = ctk.CTkEntry(self.adv_frame, width=65)
             entry_adv.insert(0, val)
-            entry_adv.grid(
-                row=row_idx, 
-                column=col_idx + 1, 
-                padx=(2, 10), 
-                pady=10
-            )
+            entry_adv.grid(row=row_idx, column=col_idx + 1, padx=(2, 10), pady=10)
             self.entries[label] = entry_adv 
 
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -99,7 +91,6 @@ class AppBotUI(ctk.CTk):
         self.log_box.see("end")
 
     def handle_alerts(self):
-        """Menangani alert yang muncul secara tidak terduga"""
         try:
             WebDriverWait(self.driver, 1).until(EC.alert_is_present())
             alert = self.driver.switch_to.alert
@@ -119,7 +110,6 @@ class AppBotUI(ctk.CTk):
         threading.Thread(target=open_logic, daemon=True).start()
 
     def cari_dan_klik_web(self, nama_gs, nominal_gs_string):
-        """Mencari data di tabel web dan melakukan konfirmasi"""
         self.handle_alerts()
         try:
             nama_gs_bersih = re.sub(r'[^a-z0-9]', '', nama_gs.lower())
@@ -131,36 +121,24 @@ class AppBotUI(ctk.CTk):
                     amount_raw = row.find_element(By.CLASS_NAME, "amount").text.strip()
                     amount_web_clean = "".join(filter(str.isdigit, amount_raw.split('.')[0]))
                     username_web = row.find_element(By.CLASS_NAME, "username").text.strip()
-
                     name_web_bersih = re.sub(r'[^a-z0-9]', '', name_web.lower())
 
                     if nama_gs_bersih == name_web_bersih and nominal_gs_string == amount_web_clean:
                         btn_confirm = row.find_element(By.CLASS_NAME, "confirm").find_element(By.TAG_NAME, "input")
-                        
-                        # Scroll agar tombol terlihat di layar
                         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_confirm)
                         time.sleep(0.5)
-                        
-                        # Klik tombol Konfirmasi
                         btn_confirm.click()
-                        self.add_log(f"Mencoba Proses: {nama_gs}...")
-
-                        # --- MENANGANI POP-UP OK/CANCEL ---
+                        
                         try:
-                            # Tunggu alert muncul max 5 detik
                             WebDriverWait(self.driver, 5).until(EC.alert_is_present())
                             alert = self.driver.switch_to.alert
                             alert_text = alert.text
-                            alert.accept() # Klik OK
-                            self.add_log(f"Berhasil Proses: {alert_text}")
-                            
-                            # Jeda agar sistem web memproses refresh status
+                            alert.accept()
+                            self.add_log(f"Berhasil Proses Web: {alert_text}")
                             time.sleep(1)
                             return username_web
                         except:
-                            self.add_log("Gagal: Gagal Diproses.")
                             return None
-
                 except: continue
             return None
         except: return None
@@ -191,43 +169,57 @@ class AppBotUI(ctk.CTk):
                 s_idx = self.col_to_idx(self.entries["Status Col"].get())
                 name_idx = self.col_to_idx(self.entries["Name Col"].get())
                 
-                try: timeout_limit_min = int(self.entries["Timeout (m)"].get())
+                try: timeout_limit_min = int(self.entries["Time Out (m)"].get())
                 except: timeout_limit_min = 10
                 
+                try: dup_limit_min = int(self.entries["Dup Time(m)"].get())
+                except: dup_limit_min = 2
+
                 pending_queue = []
                 updates = []
 
-                # --- KRITERIA FILTER ---
                 for i, row in enumerate(all_rows[start_row-1:], start=start_row):
+                    if not self.is_running: break
+                    
                     nama = row[name_idx].strip()
                     nominal_raw = row[n_idx].strip()
                     username = row[u_idx].strip()
                     status = row[s_idx].strip()
 
                     if nama and nominal_raw and not username and not status:
+                        now = time.time()
+                        # Normalisasi nominal untuk key duplikat
+                        nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
+                        
+                        # --- LOGIKA ANTI DUPLIKAT ---
+                        dup_key = f"{nama.lower()}_{nominal_clean}"
+                        if dup_key in self.last_processed:
+                            elapsed_dup = (now - self.last_processed[dup_key]) / 60
+                            if elapsed_dup < dup_limit_min:
+                                self.add_log(f"⚠️ FILTER: {nama} ({nominal_clean}) diabaikan.")
+                                updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]})
+                                continue
+
+                        # --- LOGIKA TIMEOUT ---
                         row_key = f"row_{i}_{nama}"
-                        
                         if row_key not in self.tracking_timeout:
-                            self.tracking_timeout[row_key] = time.time()
+                            self.tracking_timeout[row_key] = now
                         
-                        elapsed_min = (time.time() - self.tracking_timeout[row_key]) / 60
-                        
-                        if elapsed_min > timeout_limit_min:
+                        elapsed_timeout = (now - self.tracking_timeout[row_key]) / 60
+                        if elapsed_timeout > timeout_limit_min:
                             self.add_log(f"TIMEOUT: {nama} (Baris {i}) ditandai ❌.")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
                             if row_key in self.tracking_timeout: del self.tracking_timeout[row_key]
                             continue
 
-                        nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
                         pending_queue.append({
                             "row": i, "nama": nama, "nominal": nominal_clean,
-                            "u_col": u_idx + 1, "s_col": s_idx + 1, "key": row_key
+                            "u_col": u_idx + 1, "s_col": s_idx + 1, "key": row_key, "dup_key": dup_key
                         })
 
                 # 2. PROSES KE WEB
                 if pending_queue:
-                    self.add_log(f"SCAN: {len(pending_queue)} data pending ditemukan.")
-                    
+                    self.add_log(f"SCAN: {len(pending_queue)} data pending.")
                     try:
                         btn_refresh = self.driver.find_element(By.ID, "btnRefresh")
                         self.driver.execute_script("arguments[0].click();", btn_refresh)
@@ -240,24 +232,25 @@ class AppBotUI(ctk.CTk):
 
                     for item in pending_queue:
                         if not self.is_running: break
-                        
                         res_user = self.cari_dan_klik_web(item["nama"], item["nominal"])
                         if res_user:
-                            self.add_log(f"COCOK! {item['nama']} Berhasil Diproses.")
+                            self.add_log(f"SUKSES! {item['nama']} diproses.")
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
+                            
+                            # Simpan ke memori duplikat setelah sukses
+                            self.last_processed[item["dup_key"]] = time.time()
                             if item["key"] in self.tracking_timeout: del self.tracking_timeout[item["key"]]
 
-                # 3. BATCH UPDATE KE SHEETS
+                # 3. BATCH UPDATE
                 if updates:
                     sheet.batch_update(updates)
-                    self.add_log(f"Username & Status Berhasil diUpdate.")
                 
                 time.sleep(3)
 
             except Exception as e:
                 self.add_log(f"Error Loop: {str(e)}")
-                time.sleep(3)
+                time.sleep(5)
 
         self.btn_run.configure(state="normal")
 
@@ -296,14 +289,17 @@ class AppBotUI(ctk.CTk):
             return
         self.save_config()
         if not self.is_running:
+            # RESET MEMORI SETIAP KALI START
             self.tracking_timeout = {} 
+            self.last_processed = {} 
+            self.add_log("Memori dibersihkan. Memulai bot...")
             threading.Thread(target=self.main_loop, daemon=True).start()
 
     def btn_stop(self):
         self.is_running = False
         self.status_label.configure(text="Status: ● Bot Berhenti", text_color="red")
+        self.add_log("Bot dihentikan oleh user.")
 
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
-
