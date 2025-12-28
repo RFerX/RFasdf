@@ -195,7 +195,7 @@ class AppBotUI(ctk.CTk):
                         if max_nom_limit is not None:
                             try:
                                 if int(nominal_clean) > max_nom_limit:
-                                    self.add_log(f"LIMIT: {nama} ({nominal_clean}) > {max_nom_limit}. Tandai ❌")
+                                    self.add_log(f"LIMIT: {nama} Tandai ❌")
                                     updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
                                     continue
                             except:
@@ -206,7 +206,7 @@ class AppBotUI(ctk.CTk):
                         if dup_key in self.last_processed:
                             elapsed_dup = (now - self.last_processed[dup_key]) / 60
                             if elapsed_dup < dup_limit_min:
-                                self.add_log(f"⚠️ FILTER DUP: {nama} ({nominal_clean}) diabaikan.")
+                                self.add_log(f"⚠️ FILTER DUP: {nama} diabaikan.")
                                 updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]})
                                 continue
 
@@ -217,7 +217,7 @@ class AppBotUI(ctk.CTk):
                         
                         elapsed_timeout = (now - self.tracking_timeout[row_key]) / 60
                         if elapsed_timeout > timeout_limit_min:
-                            self.add_log(f"TIMEOUT: {nama} (Baris {i}) ditandai ❌.")
+                            self.add_log(f"TIMEOUT: {nama} ditandai ❌.")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
                             if row_key in self.tracking_timeout: del self.tracking_timeout[row_key]
                             continue
@@ -311,3 +311,4 @@ class AppBotUI(ctk.CTk):
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
+
