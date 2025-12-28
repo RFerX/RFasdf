@@ -30,7 +30,7 @@ class AppBotUI(ctk.CTk):
         self.driver = None 
         self.is_running = False
         self.tracking_timeout = {} # Memori untuk Timeout
-        self.last_processed = {}   # Memori untuk Anti-Duplikat { "nama_nominal": timestamp }
+        self.last_processed = {}   # Memori untuk Anti-Duplikat
         self.setup_ui()
         self.load_config()
 
@@ -53,10 +53,9 @@ class AppBotUI(ctk.CTk):
         self.adv_frame = ctk.CTkFrame(self)
         self.adv_frame.pack(fill="x", padx=10, pady=5)
         
-        # Menambahkan "Dup Time(m)" ke dalam settings
         settings = [
             ("Name Col", "A"), ("Nominal Col", "B"), ("Username Col", "C"), 
-            ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", ""), 
+            ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", "500000"), 
             ("Time Out (m)", "10"), ("Dup Time(m)", "2")
         ]        
         for i, (label, val) in enumerate(settings):
@@ -169,11 +168,12 @@ class AppBotUI(ctk.CTk):
                 s_idx = self.col_to_idx(self.entries["Status Col"].get())
                 name_idx = self.col_to_idx(self.entries["Name Col"].get())
                 
-                try: timeout_limit_min = int(self.entries["Time Out (m)"].get())
-                except: timeout_limit_min = 10
+                timeout_limit_min = int(self.entries["Time Out (m)"].get()) if self.entries["Time Out (m)"].get() else 10
+                dup_limit_min = int(self.entries["Dup Time(m)"].get()) if self.entries["Dup Time(m)"].get() else 2
                 
-                try: dup_limit_min = int(self.entries["Dup Time(m)"].get())
-                except: dup_limit_min = 2
+                # AMBIL NILAI MAX NOMINAL DARI UI
+                max_nom_str = self.entries["Max Nominal"].get().strip()
+                max_nom_limit = int(max_nom_str) if max_nom_str else None
 
                 pending_queue = []
                 updates = []
@@ -188,15 +188,25 @@ class AppBotUI(ctk.CTk):
 
                     if nama and nominal_raw and not username and not status:
                         now = time.time()
-                        # Normalisasi nominal untuk key duplikat
+                        # Normalisasi nominal
                         nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
                         
+                        # --- LOGIKA FILTER MAX NOMINAL + TANDA ❌ ---
+                        if max_nom_limit is not None:
+                            try:
+                                if int(nominal_clean) > max_nom_limit:
+                                    self.add_log(f"LIMIT: {nama} ({nominal_clean}) > {max_nom_limit}. Tandai ❌")
+                                    updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
+                                    continue
+                            except:
+                                continue
+
                         # --- LOGIKA ANTI DUPLIKAT ---
                         dup_key = f"{nama.lower()}_{nominal_clean}"
                         if dup_key in self.last_processed:
                             elapsed_dup = (now - self.last_processed[dup_key]) / 60
                             if elapsed_dup < dup_limit_min:
-                                self.add_log(f"⚠️ FILTER: {nama} ({nominal_clean}) diabaikan.")
+                                self.add_log(f"⚠️ FILTER DUP: {nama} ({nominal_clean}) diabaikan.")
                                 updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]})
                                 continue
 
@@ -238,11 +248,10 @@ class AppBotUI(ctk.CTk):
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
                             
-                            # Simpan ke memori duplikat setelah sukses
                             self.last_processed[item["dup_key"]] = time.time()
                             if item["key"] in self.tracking_timeout: del self.tracking_timeout[item["key"]]
 
-                # 3. BATCH UPDATE
+                # 3. BATCH UPDATE KE SPREADSHEET
                 if updates:
                     sheet.batch_update(updates)
                 
@@ -289,16 +298,15 @@ class AppBotUI(ctk.CTk):
             return
         self.save_config()
         if not self.is_running:
-            # RESET MEMORI SETIAP KALI START
             self.tracking_timeout = {} 
             self.last_processed = {} 
-            self.add_log("Memori dibersihkan. Memulai bot...")
+            self.add_log("Bot dimulai. Filter nominal aktif.")
             threading.Thread(target=self.main_loop, daemon=True).start()
 
     def btn_stop(self):
         self.is_running = False
         self.status_label.configure(text="Status: ● Bot Berhenti", text_color="red")
-        self.add_log("Bot dihentikan oleh user.")
+        self.add_log("Bot dihentikan.")
 
 if __name__ == "__main__":
     app = AppBotUI()
