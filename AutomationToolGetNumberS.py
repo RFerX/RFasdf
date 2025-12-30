@@ -62,8 +62,8 @@ class BotDataApp(ctk.CTk):
         else:
             self.btn_browser.configure(state="disabled")
 
-    def update_info(self, text):
-        self.info_box.configure(text=text)
+    def update_info(self, text, color="white"):
+        self.info_box.configure(text=text, text_color=color)
 
     def upload_file(self):
         path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
@@ -163,15 +163,19 @@ class BotDataApp(ctk.CTk):
                 df.iloc[index, 1] = phone_found
 
             # Final Save
-            df.to_excel(self.file_path, index=False, header=False)
-            self.label_progress.configure(text="Progress: 100% (Selesai)")
-            self.update_info("PROSES SELESAI! Data berhasil disimpan.")
-            self.btn_start.configure(state="normal")
+            try:
+                df.to_excel(self.file_path, index=False, header=False)
+                self.label_progress.configure(text="Progress: 100% (Selesai)")
+                self.update_info("PROSES SELESAI! Data berhasil disimpan.", "#2ecc71")
+            except Exception as save_error:
+                self.update_info(f"Gagal simpan: Tutup Excel Anda! {str(save_error)}", "red")
+                self.btn_start.configure(state="normal")
 
         except Exception as e:
-            self.update_info(f"Error: {str(e)}")
+            self.update_info(f"Error: {str(e)}", "red")
             self.btn_start.configure(state="normal")
 
 if __name__ == "__main__":
     app = BotDataApp()
     app.mainloop()
+
