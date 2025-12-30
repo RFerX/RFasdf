@@ -17,7 +17,7 @@ class BotDataApp(ctk.CTk):
         super().__init__()
 
         self.title("Automation Tool - Get Number SGA")
-        self.geometry("600x620") # Sedikit lebih tinggi untuk label progress
+        self.geometry("600x620")
         
         self.driver = None 
         self.file_path = None 
@@ -38,7 +38,6 @@ class BotDataApp(ctk.CTk):
                                        state="disabled", command=self.upload_file)
         self.btn_upload.grid(row=2, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
 
-        # Label Persentase (Baru)
         self.label_progress = ctk.CTkLabel(self, text="Progress: 0%", font=("Arial", 11))
         self.label_progress.grid(row=3, column=0, columnspan=2, padx=20, pady=(10, 0), sticky="w")
 
@@ -54,14 +53,13 @@ class BotDataApp(ctk.CTk):
                                    text_color="white", corner_radius=8, height=100, width=560, wraplength=500)
         self.info_box.grid(row=7, column=0, columnspan=2, padx=20, pady=(5, 20), sticky="ew")
 
-    # --- Logika Workflow Tombol ---
-
     def check_url_input(self, event=None):
         if len(self.entry_url.get().strip()) > 10:
             self.btn_browser.configure(state="normal")
         else:
             self.btn_browser.configure(state="disabled")
 
+    # Fungsi Update Info dengan dukungan WARNA
     def update_info(self, text, color="white"):
         self.info_box.configure(text=text, text_color=color)
 
@@ -69,7 +67,7 @@ class BotDataApp(ctk.CTk):
         path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
         if path:
             self.file_path = path
-            self.update_info(f"File Terpilih: {os.path.basename(path)}. Sekarang Anda bisa menekan START.")
+            self.update_info(f"File Terpilih: {os.path.basename(path)}. Klik START.", "#2ecc71")
             self.btn_upload.configure(fg_color="#16a085")
             self.btn_start.configure(state="normal")
 
@@ -86,10 +84,8 @@ class BotDataApp(ctk.CTk):
             self.update_info("Browser Terbuka. Silakan login, lalu Upload File Excel.")
             self.btn_upload.configure(state="normal")
         except Exception as e:
-            self.update_info(f"Gagal buka browser: {str(e)}")
+            self.update_info(f"Gagal buka browser: {str(e)}", "red")
             self.btn_browser.configure(state="normal")
-
-    # --- Logika Inti Bot ---
 
     def run_start_thread(self):
         self.btn_start.configure(state="disabled")
@@ -101,7 +97,7 @@ class BotDataApp(ctk.CTk):
             self.driver.get(f"{base_url}/SPanel/Player/MemberStat")
             wait = WebDriverWait(self.driver, 10)
 
-            # Dropdown 500
+            # Dropdown 500 (Opsional)
             try:
                 drop_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[1]/div[1]/select"
                 drop_el = wait.until(EC.element_to_be_clickable((By.XPATH, drop_xpath)))
@@ -120,15 +116,14 @@ class BotDataApp(ctk.CTk):
                 username_target = str(df.iloc[index, 0]).strip()
                 if username_target == "nan" or not username_target: continue
 
-                # Update Info Box
-                self.update_info(f"Mencari ({index+1}/{total_rows}): {username_target}")
-
-                # Update Persentase & Progress Bar (BAGIAN INI YANG DITAMBAH)
+                # Update UI Progress
                 calc_prog = (index + 1) / total_rows
                 pct = int(calc_prog * 100)
                 self.label_progress.configure(text=f"Progress: {pct}% ({index+1}/{total_rows})")
                 self.progress_bar.set(calc_prog)
+                self.update_info(f"Mencari: {username_target}")
 
+                # Proses Input Search
                 in_xpath = "/html/body/div[1]/div/div/div/div/div[1]/div/input"
                 btn_xpath = "/html/body/div[1]/div/div/div/div/div[1]/div/button[3]"
                 
@@ -137,45 +132,52 @@ class BotDataApp(ctk.CTk):
                 input_f.send_keys(username_target)
                 self.driver.find_element(By.XPATH, btn_xpath).click()
                 
-                time.sleep(2.5) 
+                time.sleep(2) # Tunggu hasil search muncul
 
                 phone_found = "Tidak Ditemukan"
                 match_found = False
                 
-                while not match_found:
+                # --- LOGIKA ANTI MACET (Cek Next Halaman) ---
+                for _ in range(10): 
                     try:
+                        time.sleep(1)
                         name_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[2]/table/tbody/tr[1]/td[2]/div[1]/span[1]"
-                        name_web = self.driver.find_element(By.XPATH, name_xpath).text.strip()
+                        name_elements = self.driver.find_elements(By.XPATH, name_xpath)
 
-                        if name_web.lower() == username_target.lower():
-                            phone_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[2]/table/tbody/tr[1]/td[2]/div[2]/span"
-                            phone_found = self.driver.find_element(By.XPATH, phone_xpath).text.strip()
-                            match_found = True
+                        if name_elements:
+                            name_web = name_elements[0].text.strip()
+                            if name_web.lower() == username_target.lower():
+                                phone_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[2]/table/tbody/tr[1]/td[2]/div[2]/span"
+                                phone_found = self.driver.find_element(By.XPATH, phone_xpath).text.strip()
+                                match_found = True
+                                break
+                        
+                        # Jika tidak ketemu di baris ini, cek tombol Next
+                        nx_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[1]/div[2]/button[3]"
+                        btn_nx = self.driver.find_element(By.XPATH, nx_xpath)
+                        if btn_nx.is_enabled() and "disabled" not in btn_nx.get_attribute("class"):
+                            btn_nx.click()
                         else:
-                            nx_xpath = "/html/body/div[1]/div/div/div/div/div[2]/div/div[1]/div[2]/button[3]"
-                            btn_nx = self.driver.find_element(By.XPATH, nx_xpath)
-                            if btn_nx.is_enabled() and "disabled" not in btn_nx.get_attribute("class"):
-                                btn_nx.click()
-                                time.sleep(2)
-                            else: break
-                    except: break
+                            break # Halaman habis
+                    except:
+                        break
 
                 df.iloc[index, 1] = phone_found
+                self.update_info(f"ID: {username_target} -> {phone_found}")
 
-            # Final Save
+            # --- SELESAI & SIMPAN ---
             try:
                 df.to_excel(self.file_path, index=False, header=False)
                 self.label_progress.configure(text="Progress: 100% (Selesai)")
-                self.update_info("PROSES SELESAI! Data berhasil disimpan.", "#2ecc71")
-            except Exception as save_error:
-                self.update_info(f"Gagal simpan: Tutup Excel Anda! {str(save_error)}", "red")
-                self.btn_start.configure(state="normal")
+                self.update_info("PROSES SELESAI! Data berhasil disimpan ke Excel.", "#2ecc71") # HIJAU
+            except Exception as e:
+                self.update_info(f"Error Simpan: Tutup file Excel Anda! ({str(e)})", "red") # MERAH
 
         except Exception as e:
-            self.update_info(f"Error: {str(e)}", "red")
+            self.update_info(f"Error Sistem: {str(e)}", "red") # MERAH
+        finally:
             self.btn_start.configure(state="normal")
 
 if __name__ == "__main__":
     app = BotDataApp()
     app.mainloop()
-
