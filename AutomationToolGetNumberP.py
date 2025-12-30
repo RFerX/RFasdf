@@ -99,7 +99,7 @@ class BotDataApp(ctk.CTk):
             
             # Error Handling jika file tidak bisa dibaca
             try:
-                df = pd.read_excel(self.file_path)
+                df = pd.read_excel(self.file_path, header=None)
             except Exception as e:
                 self.update_info(f"Error: File Excel tidak bisa dibaca. ({str(e)})", "red")
                 self.btn_start.configure(state="normal")
@@ -107,7 +107,7 @@ class BotDataApp(ctk.CTk):
 
             # Mengatasi error 'iloc cannot enlarge' secara otomatis
             if df.shape[1] < 2:
-                df['Hasil_Bot'] = ""
+                df[1] = ""
 
             total_rows = len(df)
             target_xpath = "/html/body/form/div[3]/table/tbody/tr[2]/td/table[2]/tbody/tr[2]/td/table/tbody/tr[1]/td/table/tbody/tr[3]/td[2]/input"
@@ -136,7 +136,7 @@ class BotDataApp(ctk.CTk):
 
             # Error Handling saat simpan (Biasanya karena file sedang dibuka di Excel)
             try:
-                df.to_excel(self.file_path, index=False)
+                df.to_excel(self.file_path, index=False, header=False)
                 self.update_info("SELESAI! Data berhasil disimpan ke Excel.", "#2ecc71")
             except Exception as e:
                 self.update_info(f"Error Simpan: Tutup file Excel Anda dulu! ({str(e)})", "red")
@@ -149,4 +149,5 @@ class BotDataApp(ctk.CTk):
 if __name__ == "__main__":
     app = BotDataApp()
     app.mainloop()
+
 
