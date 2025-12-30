@@ -33,7 +33,7 @@ class BotDataApp(ctk.CTk):
                                         fg_color="#8e44ad", height=35, state="disabled")
         self.btn_browser.grid(row=1, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
 
-        self.btn_upload = ctk.CTkButton(self, text="Upload File .xlxs", command=self.upload_file, 
+        self.btn_upload = ctk.CTkButton(self, text="Upload File .xlsx", command=self.upload_file, 
                                         fg_color="#2c3e50", height=35, state="disabled")
         self.btn_upload.grid(row=2, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
 
@@ -149,3 +149,4 @@ class BotDataApp(ctk.CTk):
 if __name__ == "__main__":
     app = BotDataApp()
     app.mainloop()
+
