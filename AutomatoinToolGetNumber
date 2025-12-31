@@ -33,7 +33,7 @@ class BotToolFrame(ctk.CTkFrame):
         self.file_path = None
 
         # Tombol Kembali
-        self.btn_back = ctk.CTkButton(self, text="⬅ KEMBALI", width=100, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, command=self.safe_back(back_command))
+        self.btn_back = ctk.CTkButton(self, text="⬅ KEMBALI", width=100, font=("Segoe UI", 12, "bold"), fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, command=self.safe_back(back_command))
         self.btn_back.grid(row=0, column=0, sticky="nw", padx=20, pady=20)
 
         # Header Tool (Bagian Dalam)
@@ -41,7 +41,7 @@ class BotToolFrame(ctk.CTkFrame):
         self.header.grid(row=1, column=0, pady=(0, 10))
 
         # Input URL
-        self.entry_url = ctk.CTkEntry(self, textvariable=self.url_var, placeholder_text="Masukkan URL Utama...", height=40, fg_color=COLOR_INPUT_BG)
+        self.entry_url = ctk.CTkEntry(self, textvariable=self.url_var, placeholder_text="Masukkan URL Utama...", height=40, font=("Segoe UI", 13), fg_color=COLOR_INPUT_BG)
         self.entry_url.grid(row=2, column=0, padx=40, pady=10, sticky="ew")
 
         # Tombol Browser & Upload
@@ -49,13 +49,13 @@ class BotToolFrame(ctk.CTkFrame):
         self.btn_frame.grid(row=3, column=0, padx=40, pady=5, sticky="ew")
         self.btn_frame.grid_columnconfigure((0,1), weight=1)
 
-        self.btn_browser = ctk.CTkButton(self.btn_frame, text="1. Buka Browser", state="disabled", command=self.run_open_browser_thread)
+        self.btn_browser = ctk.CTkButton(self.btn_frame, text="1. Buka Browser", font=("Segoe UI", 13, "bold"), state="disabled", command=self.run_open_browser_thread)
         self.btn_browser.grid(row=0, column=0, padx=5, sticky="ew")
 
-        self.btn_upload = ctk.CTkButton(self.btn_frame, text="2. Upload Excel", state="disabled", command=self.upload_file)
+        self.btn_upload = ctk.CTkButton(self.btn_frame, text="2. Upload Excel", font=("Segoe UI", 13, "bold"), state="disabled", command=self.upload_file)
         self.btn_upload.grid(row=0, column=1, padx=5, sticky="ew")
 
-        self.label_status = ctk.CTkLabel(self, text="Status: Menunggu...", font=("Segoe UI", 12))
+        self.label_status = ctk.CTkLabel(self, text="Status: Menunggu...", font=("Segoe UI", 13))
         self.label_status.grid(row=4, column=0, pady=(10, 0))
         
         self.progress_bar = ctk.CTkProgressBar(self, height=12, progress_color=COLOR_ACCENT_YELLOW)
@@ -66,8 +66,8 @@ class BotToolFrame(ctk.CTkFrame):
         self.btn_start = ctk.CTkButton(self, text="JALANKAN PROSES! 🐭", fg_color=COLOR_ACCENT_YELLOW, text_color="black", height=45, font=("Segoe UI", 15, "bold"), state="disabled", command=self.run_start_thread)
         self.btn_start.grid(row=6, column=0, padx=40, pady=15, sticky="ew")
 
-        # Log Box
-        self.info_box = ctk.CTkTextbox(self, fg_color="#111111", text_color="#00FF00", corner_radius=8, height=150, font=("Consolas", 11))
+        # Log Box (Font Segoe UI)
+        self.info_box = ctk.CTkTextbox(self, fg_color="#111111", text_color="#00FF00", corner_radius=8, height=150, font=("Segoe UI", 12))
         self.info_box.grid(row=7, column=0, padx=40, pady=(0, 20), sticky="nsew")
         self.grid_rowconfigure(7, weight=1)
 
@@ -200,7 +200,7 @@ class BotToolFrame(ctk.CTkFrame):
 class MainLauncher(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Automation Tool - Get Number")
+        self.title("Automation Tool - Get Contact")
         self.geometry("500x620")
         self.configure(fg_color=COLOR_MAIN_BG)
         self.current_frame = None
@@ -211,10 +211,10 @@ class MainLauncher(ctk.CTk):
         self.current_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.current_frame.pack(fill="both", expand=True, padx=40, pady=40)
         
-        # Header Utama (Warna Kuning Aksen)
+        # Header Utama (Ganti Nama Jadi Faster Than The Wind)
         ctk.CTkLabel(
-            self.current_frame, text="Automation Tool", 
-            font=("Segoe UI", 36, "bold"), text_color=COLOR_ACCENT_YELLOW
+            self.current_frame, text="Faster Than The Wind", 
+            font=("Segoe UI", 32, "bold"), text_color=COLOR_ACCENT_YELLOW
         ).pack(pady=(40, 40))
 
         # Container Tombol
@@ -232,7 +232,7 @@ class MainLauncher(ctk.CTk):
         self.btn_pkv = ctk.CTkButton(self.current_frame, text="PKV TOOL SYSTEM", command=lambda: self.open_tool("PKV"), **btn_style)
         self.btn_pkv.pack(fill="x", pady=10)
 
-        # Footer (© 2025 RFer-X. All rights reserved.)
+        # Footer
         ctk.CTkLabel(
             self.current_frame, 
             text="© 2025 RFer-X. All rights reserved.", 
