@@ -199,7 +199,7 @@ class BotToolFrame(ctk.CTkFrame):
 class MainLauncher(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("RF-- Garasi Tool")
+        self.title("Automation Tool - Get Number")
         self.geometry("450x550")
         self.minsize(400, 550)
         self.current_frame = None
@@ -221,4 +221,5 @@ class MainLauncher(ctk.CTk):
 
 if __name__ == "__main__":
     app = MainLauncher()
+
     app.mainloop()
