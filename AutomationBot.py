@@ -31,8 +31,14 @@ class AppBotUI(ctk.CTk):
         self.is_running = False
         self.tracking_timeout = {} # Memori untuk Timeout
         self.last_processed = {}   # Memori untuk Anti-Duplikat
+        
         self.setup_ui()
         self.load_config()
+
+        # KONFIGURASI WARNA LOG (Highlighting)
+        self.log_box.tag_config("error", foreground="#FF4B4B")   # Merah untuk Error
+        self.log_box.tag_config("success", foreground="#00D4FF") # Biru Muda untuk Sukses
+        self.log_box.tag_config("warning", foreground="#FFA500") # Oranye untuk Warning
 
     def setup_ui(self):
         self.config_frame = ctk.CTkFrame(self)
@@ -84,28 +90,39 @@ class AppBotUI(ctk.CTk):
         self.log_box = ctk.CTkTextbox(self, height=400, fg_color="black", text_color="#00FF00", font=("Consolas", 12))
         self.log_box.pack(fill="both", padx=10, pady=5, expand=True)
 
-    def add_log(self, message):
+    def add_log(self, message, tag=None):
+        """Fungsi Log yang mendukung pewarnaan teks"""
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-        self.log_box.insert("end", f"[{timestamp}] {message}\n")
+        full_message = f"[{timestamp}] {message}\n"
+        
+        if tag:
+            self.log_box.insert("end", full_message, tag)
+        else:
+            self.log_box.insert("end", full_message)
+            
         self.log_box.see("end")
 
     def handle_alerts(self):
         try:
             WebDriverWait(self.driver, 1).until(EC.alert_is_present())
             alert = self.driver.switch_to.alert
-            self.add_log(f"Alert Otomatis: {alert.text}")
+            self.add_log(f"Alert Otomatis: {alert.text}", "warning")
             alert.accept()
         except: pass
 
     def btn_open_browser(self):
         def open_logic():
-            options = webdriver.ChromeOptions()
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option("useAutomationExtension", False)
-            self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-            self.driver.get(self.entries["Login URL:"].get())
-            self.status_label.configure(text="Status: ● Browser Terbuka", text_color="#3498db")
+            try:
+                options = webdriver.ChromeOptions()
+                options.add_argument("--disable-blink-features=AutomationControlled")
+                options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                options.add_experimental_option("useAutomationExtension", False)
+                self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+                self.driver.get(self.entries["Login URL:"].get())
+                self.status_label.configure(text="Status: ● Browser Terbuka", text_color="#3498db")
+            except Exception as e:
+                self.add_log(f"Gagal buka browser: {str(e)}", "error")
+                
         threading.Thread(target=open_logic, daemon=True).start()
 
     def cari_dan_klik_web(self, nama_gs, nominal_gs_string):
@@ -133,7 +150,7 @@ class AppBotUI(ctk.CTk):
                             alert = self.driver.switch_to.alert
                             alert_text = alert.text
                             alert.accept()
-                            self.add_log(f"Berhasil Proses Web: {alert_text}")
+                            self.add_log(f"Berhasil Proses Web: {alert_text}", "success")
                             time.sleep(1)
                             return username_web
                         except:
@@ -171,7 +188,6 @@ class AppBotUI(ctk.CTk):
                 timeout_limit_min = int(self.entries["Time Out (m)"].get()) if self.entries["Time Out (m)"].get() else 10
                 dup_limit_min = int(self.entries["Dup Time(m)"].get()) if self.entries["Dup Time(m)"].get() else 2
                 
-                # AMBIL NILAI MAX NOMINAL DARI UI
                 max_nom_str = self.entries["Max Nominal"].get().strip()
                 max_nom_limit = int(max_nom_str) if max_nom_str else None
 
@@ -188,36 +204,34 @@ class AppBotUI(ctk.CTk):
 
                     if nama and nominal_raw and not username and not status:
                         now = time.time()
-                        # Normalisasi nominal
                         nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
                         
-                        # --- LOGIKA FILTER MAX NOMINAL + TANDA ❌ ---
+                        # LOGIKA FILTER MAX NOMINAL
                         if max_nom_limit is not None:
                             try:
                                 if int(nominal_clean) > max_nom_limit:
-                                    self.add_log(f"LIMIT: {nama} Tandai ❌")
+                                    self.add_log(f"LIMIT: {nama} (> {max_nom_limit}) Tandai ❌", "warning")
                                     updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
                                     continue
-                            except:
-                                continue
+                            except: continue
 
-                        # --- LOGIKA ANTI DUPLIKAT ---
+                        # LOGIKA ANTI DUPLIKAT
                         dup_key = f"{nama.lower()}_{nominal_clean}"
                         if dup_key in self.last_processed:
                             elapsed_dup = (now - self.last_processed[dup_key]) / 60
                             if elapsed_dup < dup_limit_min:
-                                self.add_log(f"⚠️ FILTER DUP: {nama} diabaikan.")
+                                self.add_log(f"⚠️ FILTER DUP: {nama} diabaikan.", "warning")
                                 updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]})
                                 continue
 
-                        # --- LOGIKA TIMEOUT ---
+                        # LOGIKA TIMEOUT
                         row_key = f"row_{i}_{nama}"
                         if row_key not in self.tracking_timeout:
                             self.tracking_timeout[row_key] = now
                         
                         elapsed_timeout = (now - self.tracking_timeout[row_key]) / 60
                         if elapsed_timeout > timeout_limit_min:
-                            self.add_log(f"TIMEOUT: {nama} ditandai ❌.")
+                            self.add_log(f"TIMEOUT: {nama} ditandai ❌.", "error")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
                             if row_key in self.tracking_timeout: del self.tracking_timeout[row_key]
                             continue
@@ -229,7 +243,7 @@ class AppBotUI(ctk.CTk):
 
                 # 2. PROSES KE WEB
                 if pending_queue:
-                    self.add_log(f"SCAN: {len(pending_queue)} data pending.")
+                    self.add_log(f"SCAN: {len(pending_queue)} data pending...")
                     try:
                         btn_refresh = self.driver.find_element(By.ID, "btnRefresh")
                         self.driver.execute_script("arguments[0].click();", btn_refresh)
@@ -244,7 +258,7 @@ class AppBotUI(ctk.CTk):
                         if not self.is_running: break
                         res_user = self.cari_dan_klik_web(item["nama"], item["nominal"])
                         if res_user:
-                            self.add_log(f"SUKSES! {item['nama']} diproses.")
+                            self.add_log(f"SUKSES! {item['nama']} diproses.", "success")
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
                             
@@ -258,7 +272,8 @@ class AppBotUI(ctk.CTk):
                 time.sleep(3)
 
             except Exception as e:
-                self.add_log(f"Error Loop: {str(e)}")
+                # Pesan error akan berwarna merah
+                self.add_log(f"Error Loop: {str(e)}", "error")
                 time.sleep(5)
 
         self.btn_run.configure(state="normal")
@@ -294,22 +309,20 @@ class AppBotUI(ctk.CTk):
 
     def btn_start(self):
         if not self.driver:
-            self.add_log("Buka Browser dulu!")
+            self.add_log("Buka Browser dulu!", "error")
             return
         self.save_config()
         if not self.is_running:
             self.tracking_timeout = {} 
             self.last_processed = {} 
-            self.add_log("Bot dimulai. Filter nominal aktif.")
+            self.add_log("Bot dimulai. Filter aktif.")
             threading.Thread(target=self.main_loop, daemon=True).start()
 
     def btn_stop(self):
         self.is_running = False
         self.status_label.configure(text="Status: ● Bot Berhenti", text_color="red")
-        self.add_log("Bot dihentikan.")
+        self.add_log("Bot dihentikan.", "error")
 
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
-
-
