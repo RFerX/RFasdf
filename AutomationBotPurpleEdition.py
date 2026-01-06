@@ -26,9 +26,12 @@ class AppBotUI(ctk.CTk):
         super().__init__()
         self.title("Automation Bot - Purple Edition")
         
-        # Lebar 580px adalah angka paling pas untuk label "Username" & "Status"
-        self.geometry("580x850") 
-        self.resizable(False, False)
+        # Set ukuran awal
+        self.geometry("600x850") 
+        
+        # MENGAKTIFKAN RESIZE
+        self.resizable(True, True)
+        self.minsize(590, 750)
         
         self.entries = {}
         self.driver = None 
@@ -40,33 +43,55 @@ class AppBotUI(ctk.CTk):
         self.load_config()
         self.update_button_states()
 
-        # Konfigurasi Tag Warna Log
-        self.log_box.tag_config("error", foreground="#FF4B4B")
-        self.log_box.tag_config("success", foreground="#00D4FF")
-        self.log_box.tag_config("warning", foreground="#FFA500")
+        # KONFIGURASI WARNA LOG
+        self.log_box.tag_config("error", foreground="#FF4B4B")    # Merah
+        self.log_box.tag_config("success", foreground="#00D4FF")  # Biru Muda
+        self.log_box.tag_config("warning", foreground="#00FFCC")  # HIJAU TOSCA
 
     def setup_ui(self):
         # Frame Konfigurasi Utama
         self.config_frame = ctk.CTkFrame(self)
-        self.config_frame.pack(fill="x", padx=10, pady=10)
+        self.config_frame.pack(fill="x", padx=15, pady=10)
         
-        fields = ["Domain Website:", "Link Sheet:", "JSON Path:", "Sheet Name:"]
-        for i, field in enumerate(fields):
-            ctk.CTkLabel(self.config_frame, text=field).grid(row=i, column=0, padx=(10, 5), pady=3, sticky="e")
-            if "JSON" in field:
-                ctk.CTkButton(self.config_frame, text="Browse", width=60, height=24, command=self.browse_json, fg_color="#8e44ad").grid(row=i, column=1, padx=2)
-                entry = ctk.CTkEntry(self.config_frame, width=330) 
-                entry.grid(row=i, column=2, padx=(2, 10), pady=3, sticky="w")
+        # Pengaturan kolom agar rapi (Kolom 1 & 2 yang akan melebar)
+        self.config_frame.columnconfigure(1, weight=0) # Tombol Browse tetap kecil
+        self.config_frame.columnconfigure(2, weight=1) # Entry Box memanjang penuh
+        
+        fields = [
+            ("Domain Website:", False),
+            ("Link Sheet:", False),
+            ("JSON Path:", True), # Ada tombol Browse
+            ("Sheet Name:", False)
+        ]
+
+        for i, (label_text, has_browse) in enumerate(fields):
+            # Label di sisi kiri
+            ctk.CTkLabel(self.config_frame, text=label_text, font=("Arial", 12)).grid(row=i, column=0, padx=(15, 5), pady=5, sticky="e")
+            
+            if has_browse:
+                # Jika ada tombol browse (JSON Path)
+                btn_browse = ctk.CTkButton(self.config_frame, text="Browse", width=70, height=28, 
+                                          command=self.browse_json, fg_color="#8e44ad")
+                btn_browse.grid(row=i, column=1, padx=5, pady=5, sticky="w")
+                
+                entry = ctk.CTkEntry(self.config_frame) 
+                entry.grid(row=i, column=2, padx=(5, 15), pady=5, sticky="ew")
             else:
-                entry = ctk.CTkEntry(self.config_frame, width=400) 
-                entry.grid(row=i, column=1, columnspan=2, padx=(2, 10), pady=3, sticky="w")
+                # Entry biasa (Domain, Link, Sheet Name)
+                entry = ctk.CTkEntry(self.config_frame) 
+                # Span 2 kolom agar menutup ruang tombol browse yang kosong
+                entry.grid(row=i, column=1, columnspan=2, padx=(5, 15), pady=5, sticky="ew")
             
             entry.bind("<KeyRelease>", lambda e: self.update_button_states())
-            self.entries[field] = entry
+            self.entries[label_text] = entry
 
-        # Frame Advanced Settings (Label Sesuai Request)
+        # Frame Advanced Settings (Grid 4x2)
         self.adv_frame = ctk.CTkFrame(self)
-        self.adv_frame.pack(fill="x", padx=10, pady=5)
+        self.adv_frame.pack(fill="x", padx=15, pady=5)
+        
+        # Membagi 8 kolom secara rata
+        for col in range(8):
+            self.adv_frame.columnconfigure(col, weight=1)
         
         settings = [
             ("Name", "A"), ("Nominal", "B"), ("Username", "C"), ("Status", "D"),
@@ -75,25 +100,26 @@ class AppBotUI(ctk.CTk):
         for i, (label, val) in enumerate(settings):
             row_idx = i // 4
             col_idx = (i % 4) * 2
-            ctk.CTkLabel(self.adv_frame, text=label, font=("Arial", 10, "bold")).grid(row=row_idx, column=col_idx, padx=(8, 2), pady=10, sticky="w")
+            ctk.CTkLabel(self.adv_frame, text=label, font=("Arial", 11, "bold")).grid(row=row_idx, column=col_idx, padx=(5, 2), pady=10, sticky="e")
             
-            # Textbox disamakan ukurannya (65px) agar grid terlihat simetris
-            entry_adv = ctk.CTkEntry(self.adv_frame, width=65)
+            entry_adv = ctk.CTkEntry(self.adv_frame, width=60)
             entry_adv.insert(0, val)
-            entry_adv.grid(row=row_idx, column=col_idx + 1, padx=(2, 8), pady=10)
+            entry_adv.grid(row=row_idx, column=col_idx + 1, padx=(2, 5), pady=10, sticky="ew")
             entry_adv.bind("<KeyRelease>", lambda e: self.update_button_states())
             
-            # Mapping internal agar logika script tidak berubah
             key_map = {
                 "Name": "Name Col", "Nominal": "Nominal Col", "Username": "Username Col", 
                 "Status": "Status Col", "Max": "Max Nominal"
             }
             self.entries[key_map.get(label, label)] = entry_adv 
 
-        # Frame Tombol Kontrol (Simetris 130 px)
+        # Frame Tombol Kontrol
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.btn_frame.pack(fill="x", padx=10, pady=15)
+        self.btn_frame.pack(fill="x", padx=15, pady=15)
         
+        for col in range(4):
+            self.btn_frame.columnconfigure(col, weight=1)
+
         btn_configs = [
             ("Open Browser", "#9b59b6", self.btn_open_browser),
             ("Start Bot", "#6c5ce7", self.btn_start),
@@ -102,17 +128,18 @@ class AppBotUI(ctk.CTk):
         ]
 
         for i, (txt, clr, cmd) in enumerate(btn_configs):
-            btn = ctk.CTkButton(self.btn_frame, text=txt, width=130, fg_color=clr, command=cmd)
-            btn.grid(row=0, column=i, padx=4)
+            btn = ctk.CTkButton(self.btn_frame, text=txt, font=("Arial", 12, "bold"), height=35, fg_color=clr, command=cmd)
+            btn.grid(row=0, column=i, padx=5, sticky="ew")
             if txt == "Open Browser": self.btn_open = btn
             elif txt == "Start Bot": self.btn_run = btn
             elif txt == "Stop": self.btn_stop_ui = btn
 
-        self.status_label = ctk.CTkLabel(self, text="Status: ● Idle", text_color="yellow", font=("Arial", 11, "bold"))
-        self.status_label.pack(anchor="w", padx=15)
+        self.status_label = ctk.CTkLabel(self, text="Status: ● Idle", text_color="yellow", font=("Arial", 13, "bold"))
+        self.status_label.pack(anchor="w", padx=20)
 
-        self.log_box = ctk.CTkTextbox(self, height=350, fg_color="black", text_color="#00FF00", font=("Consolas", 11))
-        self.log_box.pack(fill="both", padx=10, pady=5, expand=True)
+        # Log Box
+        self.log_box = ctk.CTkTextbox(self, fg_color="black", text_color="#00FF00", font=("Consolas", 12))
+        self.log_box.pack(fill="both", padx=15, pady=(5, 15), expand=True)
 
     # --- LOGIKA BOT (100% SAMA) ---
 
@@ -178,7 +205,11 @@ class AppBotUI(ctk.CTk):
                 sheet = client.open_by_url(self.entries["Link Sheet:"].get()).worksheet(self.entries["Sheet Name:"].get())
                 all_rows = sheet.get_all_values()
                 start_row = int(self.entries["Start Row"].get())
-                n_idx, u_idx, s_idx, name_idx = self.col_to_idx(self.entries["Nominal Col"].get()), self.col_to_idx(self.entries["Username Col"].get()), self.col_to_idx(self.entries["Status Col"].get()), self.col_to_idx(self.entries["Name Col"].get())
+                n_idx = self.col_to_idx(self.entries["Nominal Col"].get())
+                u_idx = self.col_to_idx(self.entries["Username Col"].get())
+                s_idx = self.col_to_idx(self.entries["Status Col"].get())
+                name_idx = self.col_to_idx(self.entries["Name Col"].get())
+                
                 pending_queue, updates = [], []
                 for i, row in enumerate(all_rows[start_row-1:], start=start_row):
                     if not self.is_running: break
@@ -202,6 +233,7 @@ class AppBotUI(ctk.CTk):
                                 updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]}); continue
                             pending_queue.append({"row": i, "nama": nama, "nominal": nom_clean, "u_col": u_idx+1, "s_col": s_idx+1, "key": r_key, "dup_key": dup_key})
                     except: continue
+                
                 if pending_queue:
                     self.add_log(f"SCAN: {len(pending_queue)} data pending ditemukan...", "warning")
                     try: self.driver.find_element(By.ID, "btnRefresh").click(); time.sleep(1.5)
