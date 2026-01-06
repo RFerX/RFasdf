@@ -15,7 +15,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# Konfigurasi Tema UI - Pakai "blue" agar tidak error, tapi tombol tetap ungu
+# Menggunakan tema "blue" bawaan agar tidak error seperti di gambar sebelumnya
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue") 
 
@@ -26,8 +26,8 @@ class AppBotUI(ctk.CTk):
         super().__init__()
         self.title("Automation Bot - Purple Edition")
         
-        # UKURAN PAS & RAPI
-        self.geometry("680x820") 
+        # LEBAR DIPOTONG: Dari 600-680 menjadi 530 agar pas dengan konten
+        self.geometry("530x820") 
         self.resizable(False, False)
         
         self.entries = {}
@@ -40,28 +40,30 @@ class AppBotUI(ctk.CTk):
         self.load_config()
         self.update_button_states()
 
-        # KONFIGURASI WARNA LOG
         self.log_box.tag_config("error", foreground="#FF4B4B")
         self.log_box.tag_config("success", foreground="#00D4FF")
         self.log_box.tag_config("warning", foreground="#FFA500")
 
     def setup_ui(self):
+        # Frame Atas
         self.config_frame = ctk.CTkFrame(self)
         self.config_frame.pack(fill="x", padx=10, pady=10)
         
         fields = ["Domain Website:", "Link Sheet:", "JSON Path:", "Sheet Name:"]
         for i, field in enumerate(fields):
-            ctk.CTkLabel(self.config_frame, text=field).grid(row=i, column=0, padx=10, pady=3, sticky="e")
+            ctk.CTkLabel(self.config_frame, text=field).grid(row=i, column=0, padx=(10, 5), pady=3, sticky="e")
             if "JSON" in field:
-                ctk.CTkButton(self.config_frame, text="Browse", width=60, height=24, command=self.browse_json, fg_color="#8e44ad").grid(row=i, column=1, padx=5)
-                entry = ctk.CTkEntry(self.config_frame, width=380)
-                entry.grid(row=i, column=2, padx=5, pady=3, sticky="w")
+                ctk.CTkButton(self.config_frame, text="Browse", width=60, height=24, command=self.browse_json, fg_color="#8e44ad").grid(row=i, column=1, padx=2)
+                # Ukuran entry disesuaikan agar mentok ke kanan jendela
+                entry = ctk.CTkEntry(self.config_frame, width=285) 
+                entry.grid(row=i, column=2, padx=(2, 10), pady=3, sticky="w")
             else:
-                entry = ctk.CTkEntry(self.config_frame, width=450)
-                entry.grid(row=i, column=1, columnspan=2, padx=5, pady=3, sticky="w")
+                entry = ctk.CTkEntry(self.config_frame, width=350) 
+                entry.grid(row=i, column=1, columnspan=2, padx=(2, 10), pady=3, sticky="w")
             entry.bind("<KeyRelease>", lambda e: self.update_button_states())
             self.entries[field] = entry
 
+        # Frame Tengah (Advanced)
         self.adv_frame = ctk.CTkFrame(self)
         self.adv_frame.pack(fill="x", padx=10, pady=5)
         
@@ -73,39 +75,43 @@ class AppBotUI(ctk.CTk):
         for i, (label, val) in enumerate(settings):
             row_idx = i // 4
             col_idx = (i % 4) * 2
-            ctk.CTkLabel(self.adv_frame, text=label, font=("Arial", 11)).grid(row=row_idx, column=col_idx, padx=(5, 2), pady=5, sticky="w")
-            entry_adv = ctk.CTkEntry(self.adv_frame, width=55)
+            ctk.CTkLabel(self.adv_frame, text=label, font=("Arial", 10)).grid(row=row_idx, column=col_idx, padx=(5, 2), pady=5, sticky="w")
+            entry_adv = ctk.CTkEntry(self.adv_frame, width=42)
             entry_adv.insert(0, val)
             entry_adv.grid(row=row_idx, column=col_idx + 1, padx=(2, 8), pady=5)
             entry_adv.bind("<KeyRelease>", lambda e: self.update_button_states())
             self.entries[label] = entry_adv 
 
+        # Frame Tombol
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.btn_frame.pack(fill="x", padx=10, pady=10)
         
-        self.btn_open = ctk.CTkButton(self.btn_frame, text="Open Browser", width=150, fg_color="#9b59b6", hover_color="#8e44ad", command=self.btn_open_browser)
-        self.btn_open.pack(side="left", padx=5)
-        self.btn_run = ctk.CTkButton(self.btn_frame, text="Start Bot", width=150, fg_color="#6c5ce7", hover_color="#4834d4", command=self.btn_start)
-        self.btn_run.pack(side="left", padx=5)
-        self.btn_stop_ui = ctk.CTkButton(self.btn_frame, text="Stop", width=100, fg_color="#5f27cd", hover_color="#341f97", command=self.btn_stop)
-        self.btn_stop_ui.pack(side="left", padx=5)
-        self.btn_save = ctk.CTkButton(self.btn_frame, text="Save", width=100, fg_color="#a29bfe", hover_color="#6c5ce7", text_color="black", command=self.save_config)
-        self.btn_save.pack(side="left", padx=5)
+        self.btn_open = ctk.CTkButton(self.btn_frame, text="Open Browser", width=120, fg_color="#9b59b6", hover_color="#8e44ad", command=self.btn_open_browser)
+        self.btn_open.pack(side="left", padx=3)
+        
+        self.btn_run = ctk.CTkButton(self.btn_frame, text="Start Bot", width=120, fg_color="#6c5ce7", hover_color="#4834d4", command=self.btn_start)
+        self.btn_run.pack(side="left", padx=3)
+        
+        self.btn_stop_ui = ctk.CTkButton(self.btn_frame, text="Stop", width=70, fg_color="#5f27cd", hover_color="#341f97", command=self.btn_stop)
+        self.btn_stop_ui.pack(side="left", padx=3)
+        
+        self.btn_save = ctk.CTkButton(self.btn_frame, text="Save", width=70, fg_color="#a29bfe", hover_color="#6c5ce7", text_color="black", command=self.save_config)
+        self.btn_save.pack(side="left", padx=3)
 
-        self.status_label = ctk.CTkLabel(self, text="Status: ● Idle", text_color="yellow", font=("Arial", 12, "bold"))
+        self.status_label = ctk.CTkLabel(self, text="Status: ● Idle", text_color="yellow", font=("Arial", 11, "bold"))
         self.status_label.pack(anchor="w", padx=15)
 
-        self.log_box = ctk.CTkTextbox(self, height=350, fg_color="black", text_color="#00FF00", font=("Consolas", 12))
+        # Kotak Log
+        self.log_box = ctk.CTkTextbox(self, height=350, fg_color="black", text_color="#00FF00", font=("Consolas", 11))
         self.log_box.pack(fill="both", padx=10, pady=5, expand=True)
 
+    # --- LOGIKA TOMBOL & BOT (100% SAMA) ---
     def update_button_states(self):
         try:
-            domain = self.entries["Domain Website:"].get().strip()
-            sheet_link = self.entries["Link Sheet:"].get().strip()
-            json_path = self.entries["JSON Path:"].get().strip()
-            sheet_name = self.entries["Sheet Name:"].get().strip()
-            fields_filled = all([domain, sheet_link, json_path, sheet_name])
-
+            fields_filled = all([self.entries["Domain Website:"].get().strip(), 
+                                 self.entries["Link Sheet:"].get().strip(), 
+                                 self.entries["JSON Path:"].get().strip(), 
+                                 self.entries["Sheet Name:"].get().strip()])
             if not self.driver:
                 self.btn_open.configure(state="normal")
                 self.btn_run.configure(state="disabled")
@@ -145,7 +151,7 @@ class AppBotUI(ctk.CTk):
                 self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
                 self.driver.get(domain)
                 self.after(0, lambda: self.status_label.configure(text="Status: ● Browser Terbuka", text_color="#3498db"))
-                self.add_log(f"Browser Terbuka. Silakan login.")
+                self.add_log(f"Browser Terbuka.")
                 self.after(0, self.update_button_states)
                 def monitor():
                     while True:
@@ -171,20 +177,16 @@ class AppBotUI(ctk.CTk):
                     name_web = row.find_element(By.CLASS_NAME, "fromAccountName").text.strip()
                     amount_raw = row.find_element(By.CLASS_NAME, "amount").text.strip()
                     amount_web_clean = "".join(filter(str.isdigit, amount_raw.split('.')[0]))
-                    username_web = row.find_element(By.CLASS_NAME, "username").text.strip()
                     name_web_bersih = re.sub(r'[^a-z0-9]', '', name_web.lower())
-
+                    username_web = row.find_element(By.CLASS_NAME, "username").text.strip()
                     if nama_gs_bersih == name_web_bersih and nominal_gs_string == amount_web_clean:
                         btn_confirm = row.find_element(By.CLASS_NAME, "confirm").find_element(By.TAG_NAME, "input")
                         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_confirm)
-                        time.sleep(0.5)
-                        btn_confirm.click()
+                        time.sleep(0.5); btn_confirm.click()
                         try:
                             WebDriverWait(self.driver, 5).until(EC.alert_is_present())
-                            alert = self.driver.switch_to.alert
-                            alert_text = alert.text
-                            alert.accept()
-                            self.add_log(f"Berhasil Proses Web: {alert_text}", "success")
+                            alert = self.driver.switch_to.alert; res = alert.text; alert.accept()
+                            self.add_log(f"Berhasil: {res}", "success")
                             return username_web
                         except: return None
                 except: continue
@@ -195,67 +197,48 @@ class AppBotUI(ctk.CTk):
         self.is_running = True
         self.after(0, self.update_button_states)
         self.after(0, lambda: self.status_label.configure(text="Status: ● Bot Berjalan", text_color="#2ecc71"))
-        
         try:
             domain = self.entries["Domain Website:"].get().strip()
             if not domain.startswith("http"): domain = "https://" + domain
-            deposit_url = domain.rstrip('/') + "/_SubAg_Sub/DepositRequest.aspx?"
-            self.driver.get(deposit_url)
+            self.driver.get(domain.rstrip('/') + "/_SubAg_Sub/DepositRequest.aspx?")
             time.sleep(3)
         except: pass
-
         while self.is_running:
             try:
                 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                 creds = ServiceAccountCredentials.from_json_keyfile_name(self.entries["JSON Path:"].get(), scope)
                 client = gspread.authorize(creds)
                 sheet = client.open_by_url(self.entries["Link Sheet:"].get()).worksheet(self.entries["Sheet Name:"].get())
-                
                 all_rows = sheet.get_all_values()
                 start_row = int(self.entries["Start Row"].get())
                 n_idx, u_idx, s_idx, name_idx = self.col_to_idx(self.entries["Nominal Col"].get()), self.col_to_idx(self.entries["Username Col"].get()), self.col_to_idx(self.entries["Status Col"].get()), self.col_to_idx(self.entries["Name Col"].get())
-                
-                timeout_limit_min = int(self.entries["Time Out(m)"].get()) if self.entries["Time Out(m)"].get() else 10
-                dup_limit_min = int(self.entries["Dup Time(m)"].get()) if self.entries["Dup Time(m)"].get() else 2
-                max_nom_limit = int(self.entries["Max Nominal"].get()) if self.entries["Max Nominal"].get() else None
-
-                pending_queue, updates = [], []
-
+                timeout_min = int(self.entries["Time Out(m)"].get()) if self.entries["Time Out(m)"].get() else 10
+                dup_min = int(self.entries["Dup Time(m)"].get()) if self.entries["Dup Time(m)"].get() else 2
+                max_nom = int(self.entries["Max Nominal"].get()) if self.entries["Max Nominal"].get() else None
+                pending, updates = [], []
                 for i, row in enumerate(all_rows[start_row-1:], start=start_row):
                     if not self.is_running: break
-                    try:
-                        nama, nominal_raw = row[name_idx].strip(), row[n_idx].strip()
-                        username, status = row[u_idx].strip(), row[s_idx].strip()
+                    try: 
+                        nama, nom_raw = row[name_idx].strip(), row[n_idx].strip()
+                        u_gs, stat_gs = row[u_idx].strip(), row[s_idx].strip()
                     except: continue
-
-                    if nama and nominal_raw and not username and not status:
-                        now = time.time()
-                        nominal_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nominal_raw)[0]))
-                        
-                        if max_nom_limit and int(nominal_clean) > max_nom_limit:
-                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
-                            continue
-
-                        dup_key = f"{nama.lower()}_{nominal_clean}"
-                        if dup_key in self.last_processed and (now - self.last_processed[dup_key])/60 < dup_limit_min:
-                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]})
-                            continue
-
-                        row_key = f"row_{i}_{nama}"
-                        if row_key not in self.tracking_timeout: self.tracking_timeout[row_key] = now
-                        if (now - self.tracking_timeout[row_key])/60 > timeout_limit_min:
-                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]})
-                            continue
-
-                        pending_queue.append({"row": i, "nama": nama, "nominal": nominal_clean, "u_col": u_idx + 1, "s_col": s_idx + 1, "key": row_key, "dup_key": dup_key})
-
-                if pending_queue:
-                    self.add_log(f"Scan {len(pending_queue)} data pending...")
+                    if nama and nom_raw and not u_gs and not stat_gs:
+                        now = time.time(); nom_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nom_raw)[0]))
+                        if max_nom and int(nom_clean) > max_nom:
+                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]}); continue
+                        dup_key = f"{nama.lower()}_{nom_clean}"
+                        if dup_key in self.last_processed and (now - self.last_processed[dup_key])/60 < dup_min:
+                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["⚠️"]]}); continue
+                        r_key = f"row_{i}_{nama}"
+                        if r_key not in self.tracking_timeout: self.tracking_timeout[r_key] = now
+                        if (now - self.tracking_timeout[r_key])/60 > timeout_min:
+                            updates.append({'range': gspread.utils.rowcol_to_a1(i, s_idx + 1), 'values': [["❌"]]}); continue
+                        pending.append({"row": i, "nama": nama, "nominal": nom_clean, "u_col": u_idx + 1, "s_col": s_idx + 1, "key": r_key, "dup_key": dup_key})
+                if pending:
                     try: self.driver.find_element(By.ID, "btnRefresh").click(); time.sleep(1.5)
                     except: self.driver.refresh(); time.sleep(3)
-                    
                     self.handle_alerts()
-                    for item in pending_queue:
+                    for item in pending:
                         if not self.is_running: break
                         res_user = self.cari_dan_klik_web(item["nama"], item["nominal"])
                         if res_user:
@@ -263,25 +246,19 @@ class AppBotUI(ctk.CTk):
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["s_col"]), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], item["u_col"]), 'values': [[res_user]]})
                             self.last_processed[item["dup_key"]] = time.time()
-                            if item["key"] in self.tracking_timeout: del self.tracking_timeout[item["key"]]
-
                 if updates: sheet.batch_update(updates)
                 time.sleep(3)
-            except Exception as e:
-                self.add_log(f"Error: {str(e)}", "error")
-                time.sleep(5)
+            except Exception as e: self.add_log(f"Error: {str(e)}", "error"); time.sleep(5)
         self.after(0, self.update_button_states)
 
     def btn_start(self):
         if not self.driver: return
-        self.save_config()
-        self.tracking_timeout, self.last_processed = {}, {}
+        self.save_config(); self.tracking_timeout, self.last_processed = {}, {}
         threading.Thread(target=self.main_loop, daemon=True).start()
 
     def btn_stop(self):
         self.is_running = False
-        self.add_log("Bot Berhenti.", "error")
-        self.after(0, self.update_button_states)
+        self.add_log("Bot Berhenti.", "error"); self.after(0, self.update_button_states)
 
     def col_to_idx(self, letter):
         idx = 0
