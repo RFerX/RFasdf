@@ -62,7 +62,7 @@ class AppBotUI(ctk.CTk):
         settings = [
             ("Name Col", "A"), ("Nominal Col", "B"), ("Username Col", "C"), 
             ("Status Col", "D"), ("Start Row", "2"), ("Max Nominal", "500000"), 
-            ("Time Out (m)", "10"), ("Dup Time(m)", "2")
+            ("Time Out(m)", "10"), ("Dup Time(m)", "2")
         ]        
         for i, (label, val) in enumerate(settings):
             row_idx = i // 4
@@ -185,7 +185,7 @@ class AppBotUI(ctk.CTk):
                 s_idx = self.col_to_idx(self.entries["Status Col"].get())
                 name_idx = self.col_to_idx(self.entries["Name Col"].get())
                 
-                timeout_limit_min = int(self.entries["Time Out (m)"].get()) if self.entries["Time Out (m)"].get() else 10
+                timeout_limit_min = int(self.entries["Time Out(m)"].get()) if self.entries["Time Out(m)"].get() else 10
                 dup_limit_min = int(self.entries["Dup Time(m)"].get()) if self.entries["Dup Time(m)"].get() else 2
                 
                 max_nom_str = self.entries["Max Nominal"].get().strip()
@@ -326,3 +326,4 @@ class AppBotUI(ctk.CTk):
 if __name__ == "__main__":
     app = AppBotUI()
     app.mainloop()
+
