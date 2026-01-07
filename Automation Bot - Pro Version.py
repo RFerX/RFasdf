@@ -22,7 +22,7 @@ ctk.set_default_color_theme("blue")
 class PurpleBotApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Automation Bot Pro")
+        self.title("Automation Bot - Pro Version")
         
         window_width = 1250
         window_height = 850
@@ -454,3 +454,4 @@ class PurpleBotApp(ctk.CTk):
 if __name__ == "__main__":
     app = PurpleBotApp()
     app.mainloop()
+
