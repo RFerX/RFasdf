@@ -251,7 +251,7 @@ class AutomationBotApp(ctk.CTk):
                         pending_queue.append({"row": i, "nama": nama_gs, "nominal": nom_clean, "dup_key": dup_key, "r_key": r_key})
 
                 if pending_queue:
-                    self.add_log(f"--- {len(pending_queue)} NEW DATA", bot_name, "green")
+                    self.add_log(f"--- {len(pending_queue)} NEW DATA", bot_name, "blue")
                     try: b['driver'].find_element(By.ID, "btnRefresh").click(); time.sleep(1.5)
                     except: b['driver'].refresh(); time.sleep(3)
                     for item in pending_queue:
