@@ -151,7 +151,7 @@ class AutomationBotApp(ctk.CTk):
         ctk.CTkButton(top_bar, text="🔄 REFRESH DATABASE", width=120, fg_color=self.color_dark_purple, command=self.refresh_link_list).pack(side="right")
         
         input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_card.pack(fill="x", pady=10, padx=20)
-        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category (Contoh: Slot_Gacor)", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
+        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
         self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40); self.link_url.grid(row=0, column=1, padx=10, pady=20)
         self.btn_save_link = ctk.CTkButton(input_card, text="SAVE TO DATABASE", fg_color=self.color_main, height=40, command=self.save_link_json, state="disabled"); self.btn_save_link.grid(row=0, column=2, padx=10, pady=20)
         self.link_name.bind("<KeyRelease>", lambda e: self.check_link_inputs()); self.link_url.bind("<KeyRelease>", lambda e: self.check_link_inputs())
