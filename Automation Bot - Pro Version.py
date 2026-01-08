@@ -129,7 +129,7 @@ class AutomationBotApp(ctk.CTk):
     def setup_link_tab(self):
         container = ctk.CTkFrame(self.tab_link, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
         top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
-        ctk.CTkButton(top_bar, text="🔄 REFRESH DATABASE", width=120, fg_color="#2E1065", command=self.refresh_link_list).pack(side="right")
+        ctk.CTkButton(top_bar, text="🔄 Refresh", width=120, fg_color="#2E1065", command=self.refresh_link_list).pack(side="right")
         input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_card.pack(fill="x", pady=10, padx=20)
         self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
         self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40); self.link_url.grid(row=0, column=1, padx=10, pady=20)
@@ -140,7 +140,7 @@ class AutomationBotApp(ctk.CTk):
     def setup_config_tab(self):
         container = ctk.CTkFrame(self.tab_config, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
         top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
-        ctk.CTkButton(top_bar, text="🔄 REFRESH ENGINE", width=120, fg_color="#2E1065", command=self.refresh_config_list).pack(side="right")
+        ctk.CTkButton(top_bar, text="🔄 Refresh", width=120, fg_color="#2E1065", command=self.refresh_config_list).pack(side="right")
         input_grid = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_grid.pack(fill="x", padx=20, pady=10)
         self.cfg_entries = {}
         labels = ["Name Col", "Nominal Col", "Username Col", "Status Col", "Max", "Timeout (m)", "DupTime (m)"]
@@ -157,7 +157,7 @@ class AutomationBotApp(ctk.CTk):
     def setup_running_tab(self):
         top = ctk.CTkFrame(self.tab_run, fg_color="transparent"); top.pack(fill="x", padx=20, pady=15)
         ctk.CTkButton(top, text="+ DEPLOY NEW BOT", fg_color=self.color_main, height=45, font=("Inter", 13, "bold"), command=self.add_bot_row).pack(side="left")
-        ctk.CTkButton(top, text="Refresh All Assets", fg_color="#2E1065", width=150, height=45, command=self.refresh_all_bot_dropdowns).pack(side="right")
+        ctk.CTkButton(top, text="Refresh", fg_color="#2E1065", width=150, height=45, command=self.refresh_all_bot_dropdowns).pack(side="right")
         self.h_row = ctk.CTkFrame(self.tab_run, fg_color="#1F1F23", height=45); self.h_row.pack(fill="x", padx=20, pady=(10, 0))
         headers = ["IDENTIFIER", "SHEET", "ROW", "CONFIG", "DATA SOURCE", "JSON KEY", "COMMANDS"]
         for i, txt in enumerate(headers):
@@ -185,7 +185,7 @@ class AutomationBotApp(ctk.CTk):
         b_stop = ctk.CTkButton(btn_c, text="STOP", width=60, state="disabled", fg_color="#991B1B", command=lambda r=rid: self.bot_stop_ui(r)); b_stop.pack(side="left", padx=2)
         ctk.CTkButton(btn_c, text="×", width=35, fg_color="transparent", command=lambda r=rid, f=row_card: self.bot_del(r, f)).pack(side="left", padx=2)
         
-        status_lbl = ctk.CTkLabel(self.status_container, text=f"IDLE ➜ {rid}", font=("Consolas", 11), text_color="#52525B", anchor="w")
+        status_lbl = ctk.CTkLabel(self.status_container, text=f"IDLE ➜ {rid}", font=("Consolas", 17), text_color="#52525B", anchor="w")
         status_lbl.pack(fill="x", padx=15, pady=8)
         
         self.bots[rid] = {'n_en': n_en, 's_en': s_en, 'r_en': r_en, 'cfg_dd': cfg_dd, 'lnk_dd': lnk_dd, 'j_en': j_en, 'b_web': b_web, 'b_start': b_start, 'b_stop': b_stop, 'status_lbl': status_lbl, 'driver': None, 'is_running': False, 'timeout_tracker': {}, 'last_processed': {}}
