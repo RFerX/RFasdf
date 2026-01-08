@@ -43,33 +43,52 @@ class AutomationBotApp(ctk.CTk):
         self.bots = {} 
         self.col_weights = [12, 12, 5, 12, 12, 15, 25] 
 
+        # State untuk animasi
+        self.is_animating = True
+
         self.setup_ui()
         self.refresh_link_list()
         self.refresh_config_list()
         
-        self.after(500, self.animate_placeholder_loop)
+        # Start Animasi
+        self.animate_placeholder_loop()
+        
         self.add_log("System initialized. Welcome and be smart.", "SYSTEM", "blue")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+    def stop_placeholder_anim(self, event):
+        """Berhenti animasi saat user klik/fokus ke entry"""
+        self.is_animating = False
+        self.global_domain.configure(placeholder_text="")
+
+    def start_placeholder_anim(self, event):
+        """Mulai animasi lagi jika entry kosong saat ditinggalkan"""
+        if not self.global_domain.get():
+            self.is_animating = True
+            self.animate_placeholder_loop()
+
     def animate_placeholder_loop(self):
         full_text = "Input Domain URL ........."
+        
         def type_text(index):
-            if not self.global_domain.get():
+            # Cek apakah masih diizinkan beranimasi dan input kosong
+            if self.is_animating and not self.global_domain.get():
                 if index <= len(full_text):
                     self.global_domain.configure(placeholder_text=full_text[:index])
                     self.after(100, lambda: type_text(index + 1))
                 else:
                     self.after(2000, lambda: erase_text(len(full_text)))
+
         def erase_text(index):
-            if not self.global_domain.get():
+            if self.is_animating and not self.global_domain.get():
                 if index >= 0:
                     self.global_domain.configure(placeholder_text=full_text[:index])
                     self.after(50, lambda: erase_text(index - 1))
                 else:
                     self.after(500, lambda: type_text(0))
-            else:
-                self.after(3000, lambda: type_text(0))
-        type_text(0)
+
+        if self.is_animating:
+            type_text(0)
 
     def add_log(self, message, bot_display_name="SYSTEM", color="green"):
         self.after(0, self._process_log, message, bot_display_name, color)
@@ -91,14 +110,21 @@ class AutomationBotApp(ctk.CTk):
         logo_f.pack(side="left", padx=50)
         ctk.CTkLabel(logo_f, text="Automation Bot V1", font=("Impact", 56), text_color=self.color_main).pack(side="top", anchor="w")
         ctk.CTkLabel(logo_f, text="By RFer-X Garasi", font=("Consolas", 13, "bold"), text_color=self.color_accent).pack(side="top", anchor="w", padx=5)
+        
         domain_container = ctk.CTkFrame(self.header, fg_color=self.color_bg, corner_radius=12, border_width=0, height=60, width=550)
         domain_container.pack(side="right", padx=50, pady=40)
         domain_container.pack_propagate(False)
         domain_container.grid_columnconfigure(1, weight=1)
         domain_container.grid_rowconfigure(0, weight=1)
+        
         ctk.CTkLabel(domain_container, text="🌐", font=("Inter", 20)).grid(row=0, column=0, padx=(20, 5))
+        
         self.global_domain = ctk.CTkEntry(domain_container, width=500, height=55, fg_color="transparent", border_width=0, font=("Consolas", 16, "bold"), text_color=self.color_main, placeholder_text="")
         self.global_domain.grid(row=0, column=1, padx=10, sticky="ew")
+        
+        # BINDING UNTUK FIX MASALAH INPUT
+        self.global_domain.bind("<FocusIn>", self.stop_placeholder_anim)
+        self.global_domain.bind("<FocusOut>", self.start_placeholder_anim)
 
         self.sidebar = ctk.CTkFrame(self, width=280, fg_color=self.color_card, corner_radius=0)
         self.sidebar.pack(side="left", fill="y")
@@ -127,7 +153,7 @@ class AutomationBotApp(ctk.CTk):
     def setup_link_tab(self):
         container = ctk.CTkFrame(self.tab_link, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
         input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_card.pack(fill="x", pady=20, padx=20)
-        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Bank Name (e.g. BCA_01)", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
+        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
         self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40); self.link_url.grid(row=0, column=1, padx=10, pady=20)
         self.btn_save_link = ctk.CTkButton(input_card, text="ADD SOURCE", fg_color=self.color_main, height=40, command=self.save_link_json, state="disabled"); self.btn_save_link.grid(row=0, column=2, padx=10, pady=20)
         
@@ -342,7 +368,6 @@ class AutomationBotApp(ctk.CTk):
 
     def save_cfg_json(self):
         d = {k: v.get().strip() for k, v in self.cfg_entries.items()}
-        # GABUNGAN 4 ISI TEXTBOX UNTUK NAMA FILE
         raw_name = f"{d['Name Col']}_{d['Nominal Col']}_{d['Username Col']}_{d['Status Col']}"
         safe_name = re.sub(r'[^a-zA-Z0-9]', '', raw_name)
         filename = f"cfg_{safe_name}.json"
@@ -377,7 +402,10 @@ class AutomationBotApp(ctk.CTk):
             b['driver'].get(url if url.startswith("http") else "https://"+url)
             b['browser_ready'] = True
             self.after(0, lambda: [b['status_lbl'].configure(text=f"READY ➜ {b['n_en'].get()}", text_color=self.color_accent), b['b_start'].configure(state="normal")])
-            while True: time.sleep(1); b['driver'].window_handles
+            while True: 
+                time.sleep(1)
+                if b['driver']:
+                    b['driver'].window_handles
         except:
             b['driver'] = None; b['is_running'] = False; b['browser_ready'] = False
             self.after(0, lambda: [b['status_lbl'].configure(text=f"IDLE ➜ {rid}", text_color="#52525B"), b['b_web'].configure(state="normal"), b['b_start'].configure(state="disabled")])
@@ -393,7 +421,9 @@ class AutomationBotApp(ctk.CTk):
         b['status_lbl'].configure(text=f"HALTED ➜ {b['n_en'].get()}", text_color="#F59E0B")
 
     def bot_del(self, rid, frame):
-        if self.bots[rid]['driver']: self.bots[rid]['driver'].quit()
+        if self.bots[rid]['driver']: 
+            try: self.bots[rid]['driver'].quit()
+            except: pass
         self.bots[rid]['status_lbl'].destroy(); del self.bots[rid]; frame.destroy()
 
     def refresh_all_bot_dropdowns(self):
@@ -405,7 +435,9 @@ class AutomationBotApp(ctk.CTk):
         idx = 0
         for c in letter.upper().strip(): idx = idx * 26 + (ord(c) - ord('A') + 1)
         return idx - 1
-    def on_closing(self): self.destroy(); os._exit(0)
+
+    def on_closing(self): 
+        self.destroy(); os._exit(0)
 
 if __name__ == "__main__":
     app = AutomationBotApp()
