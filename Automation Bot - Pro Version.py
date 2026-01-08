@@ -21,7 +21,7 @@ ctk.set_appearance_mode("dark")
 class AutomationBotApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Automation Bot - Ultimate Deposit Version")
+        self.title("Automation Bot - Ultimate Version")
         
         window_width = 1450 
         window_height = 900
@@ -62,12 +62,11 @@ class AutomationBotApp(ctk.CTk):
         self.log_box.insert("end", full_message, tag_name)
         self.log_box.see("end")
 
-    # --- VALIDASI INPUT RULES ENGINE ---
+    # --- VALIDASI INPUT ---
     def check_cfg_inputs(self):
         all_valid = True
         text_cols = ["Name Col", "Nominal Col", "Username Col", "Status Col"]
         num_cols = ["Max", "Timeout (m)", "DupTime (m)"]
-
         for label in text_cols:
             en = self.cfg_entries[label]
             val = en.get().strip()
@@ -76,7 +75,6 @@ class AutomationBotApp(ctk.CTk):
             else:
                 en.configure(text_color=self.color_error)
                 all_valid = False
-
         for label in num_cols:
             en = self.cfg_entries[label]
             val = en.get().strip()
@@ -85,15 +83,10 @@ class AutomationBotApp(ctk.CTk):
             else:
                 en.configure(text_color=self.color_error)
                 all_valid = False
-
-        if all_valid:
-            self.btn_save_cfg.configure(state="normal", fg_color=self.color_main)
-        else:
-            self.btn_save_cfg.configure(state="disabled", fg_color="#52525B")
+        self.btn_save_cfg.configure(state="normal" if all_valid else "disabled", fg_color=self.color_main if all_valid else "#52525B")
 
     # --- UI SETUP ---
     def setup_ui(self):
-        # HEADER
         self.header = ctk.CTkFrame(self, height=140, fg_color=self.color_card, corner_radius=0, border_width=1, border_color="#27272A")
         self.header.pack(side="top", fill="x")
         self.header.pack_propagate(False)
@@ -101,7 +94,7 @@ class AutomationBotApp(ctk.CTk):
         logo_f = ctk.CTkFrame(self.header, fg_color="transparent")
         logo_f.pack(side="left", padx=50)
         ctk.CTkLabel(logo_f, text="Automation Bot V1", font=("Impact", 56), text_color=self.color_main).pack(side="top", anchor="w")
-        ctk.CTkLabel(logo_f, text="Pro Deposit System", font=("Consolas", 13, "bold"), text_color=self.color_accent).pack(side="top", anchor="w", padx=5)
+        ctk.CTkLabel(logo_f, text="By RFer-X Garasi", font=("Consolas", 13, "bold"), text_color=self.color_accent).pack(side="top", anchor="w", padx=5)
         
         domain_container = ctk.CTkFrame(self.header, fg_color=self.color_bg, corner_radius=12, height=60, width=550)
         domain_container.pack(side="right", padx=50, pady=40); domain_container.pack_propagate(False)
@@ -111,14 +104,12 @@ class AutomationBotApp(ctk.CTk):
         self.global_domain.grid(row=0, column=1, padx=10, sticky="ew")
         self.global_domain.bind("<KeyRelease>", lambda e: self.update_all_locks())
 
-        # SIDEBAR
         self.sidebar = ctk.CTkFrame(self, width=280, fg_color=self.color_card, corner_radius=0)
         self.sidebar.pack(side="left", fill="y")
         ctk.CTkLabel(self.sidebar, text="BOTS STATUS", font=("Inter", 12, "bold"), text_color=self.color_main).pack(pady=(25, 10), padx=20, anchor="w")
         self.status_container = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent")
         self.status_container.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # CONTENT AREA
         content = ctk.CTkFrame(self, fg_color="transparent")
         content.pack(side="right", expand=True, fill="both", padx=15, pady=15)
         self.tabview = ctk.CTkTabview(content, segmented_button_selected_color=self.color_main, fg_color=self.color_card)
@@ -139,7 +130,6 @@ class AutomationBotApp(ctk.CTk):
         container = ctk.CTkFrame(self.tab_link, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
         top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
         ctk.CTkButton(top_bar, text="🔄 REFRESH DATABASE", width=120, fg_color="#2E1065", command=self.refresh_link_list).pack(side="right")
-        
         input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_card.pack(fill="x", pady=10, padx=20)
         self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
         self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40); self.link_url.grid(row=0, column=1, padx=10, pady=20)
@@ -151,7 +141,6 @@ class AutomationBotApp(ctk.CTk):
         container = ctk.CTkFrame(self.tab_config, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
         top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
         ctk.CTkButton(top_bar, text="🔄 REFRESH ENGINE", width=120, fg_color="#2E1065", command=self.refresh_config_list).pack(side="right")
-        
         input_grid = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_grid.pack(fill="x", padx=20, pady=10)
         self.cfg_entries = {}
         labels = ["Name Col", "Nominal Col", "Username Col", "Status Col", "Max", "Timeout (m)", "DupTime (m)"]
@@ -208,12 +197,12 @@ class AutomationBotApp(ctk.CTk):
 
         n_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); s_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); j_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); self.lock_logic(rid)
 
-    # --- BOT CORE LOGIC ---
+    # --- BOT CORE ---
     def main_logic(self, rid):
         b = self.bots[rid]
         bot_name = b['n_en'].get()
         try:
-            self.add_log("------------ SEDANG MENGAMBIL DATA DARI SHEET...", bot_name, "blue")
+            self.add_log("------------ MENGAMBIL DATA DARI SHEET...", bot_name, "blue")
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
             creds = ServiceAccountCredentials.from_json_keyfile_name(b['j_en'].get(), scope)
             client = gspread.authorize(creds)
@@ -244,37 +233,32 @@ class AutomationBotApp(ctk.CTk):
                     if nama_gs and nom_raw and not user_gs and not status_gs:
                         nom_clean = "".join(filter(str.isdigit, re.split(r'[.,]\d{2}$', nom_raw)[0]))
                         if not nom_clean: continue
-                        
                         if max_nom > 0 and int(nom_clean) > max_nom:
-                            self.add_log(f"------------ BATAS MAKSIMAL (MAX) TERCAPAI: {nama_gs}", bot_name, "orange")
+                            self.add_log(f"--- MAX REACHED: {nama_gs}", bot_name, "orange")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, idx_map['Status Col'] + 1), 'values': [["❌"]]})
                             continue
-
                         dup_key = f"{nama_gs.lower()}_{nom_clean}"
                         if dup_key in b['last_processed'] and (now - b['last_processed'][dup_key])/60 < dup_min:
-                            self.add_log(f"------------ DATA DUPLIKAT DITEMUKAN (SKIP): {nama_gs}", bot_name, "orange")
+                            self.add_log(f"--- DUP SKIP: {nama_gs}", bot_name, "orange")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, idx_map['Status Col'] + 1), 'values': [["⚠️"]]})
                             continue
-
                         r_key = f"row_{i}_{nama_gs}"
                         if r_key not in b['timeout_tracker']: b['timeout_tracker'][r_key] = now
                         if (now - b['timeout_tracker'][r_key])/60 > to_min:
-                            self.add_log(f"------------ PROSES TIME OUT: {nama_gs}", bot_name, "orange")
+                            self.add_log(f"--- TIMEOUT: {nama_gs}", bot_name, "orange")
                             updates.append({'range': gspread.utils.rowcol_to_a1(i, idx_map['Status Col'] + 1), 'values': [["❌"]]})
                             continue
-
                         pending_queue.append({"row": i, "nama": nama_gs, "nominal": nom_clean, "dup_key": dup_key, "r_key": r_key})
 
                 if pending_queue:
-                    self.add_log(f"------------ {len(pending_queue)} DATA BARU DITEMUKAN", bot_name, "green")
+                    self.add_log(f"--- {len(pending_queue)} NEW DATA", bot_name, "green")
                     try: b['driver'].find_element(By.ID, "btnRefresh").click(); time.sleep(1.5)
                     except: b['driver'].refresh(); time.sleep(3)
-
                     for item in pending_queue:
                         if not b['is_running']: break
                         res_user = self.cari_dan_klik_web(b['driver'], item["nama"], item["nominal"])
                         if res_user:
-                            self.add_log(f"------------ BERHASIL PROSES DATA: {item['nama']}", bot_name, "green")
+                            self.add_log(f"--- SUCCESS: {item['nama']}", bot_name, "green")
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], idx_map['Status Col'] + 1), 'values': [["✅"]]})
                             updates.append({'range': gspread.utils.rowcol_to_a1(item["row"], idx_map['Username Col'] + 1), 'values': [[res_user]]})
                             b['last_processed'][item["dup_key"]] = time.time()
@@ -283,7 +267,7 @@ class AutomationBotApp(ctk.CTk):
                 if updates: sheet.batch_update(updates)
                 time.sleep(3)
         except Exception as e:
-            self.add_log(f"------------ ERROR SISTEM: {str(e)[:50]}", bot_name, "red")
+            self.add_log(f"--- ERROR: {str(e)[:50]}", bot_name, "red")
             self.bot_stop_ui(rid)
 
     def cari_dan_klik_web(self, driver, nama_gs, nominal_gs_string):
@@ -314,24 +298,53 @@ class AutomationBotApp(ctk.CTk):
         b = self.bots[rid]
         try:
             url = self.global_domain.get().strip()
+            if not url.startswith("http"): url = "https://" + url
             b['driver'] = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-            b['driver'].get(url if url.startswith("http") else "https://"+url)
+            b['driver'].get(url)
             self.after(0, lambda: [b['status_lbl'].configure(text=f"READY ➜ {b['n_en'].get()}", text_color=self.color_accent), b['b_start'].configure(state="normal")])
-            while b['driver']: time.sleep(1); _ = b['driver'].window_handles
+            while b['driver']: 
+                time.sleep(1)
+                _ = b['driver'].window_handles
         except: b['driver'] = None
         finally:
             self.after(0, lambda: [b['status_lbl'].configure(text=f"IDLE ➜ {rid}", text_color="#52525B"), b['b_web'].configure(state="normal"), b['b_start'].configure(state="disabled")])
 
     def bot_start_ui(self, rid):
-        b = self.bots[rid]; b['is_running'] = True; b['timeout_tracker'] = {}; b['last_processed'] = {}
-        b['b_start'].configure(state="disabled"); b['b_stop'].configure(state="normal")
+        b = self.bots[rid]
+        # Pindah ke Link Khusus Deposit
+        try:
+            base_url = self.global_domain.get().strip()
+            if base_url.endswith('/'): base_url = base_url[:-1]
+            if not base_url.startswith("http"): base_url = "https://" + base_url
+            target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
+            
+            if b['driver']:
+                b['driver'].get(target_url)
+                self.add_log(f"Navigasi ke: {target_url}", b['n_en'].get(), "blue")
+        except Exception as e:
+            self.add_log(f"Gagal navigasi: {str(e)}", b['n_en'].get(), "red")
+            return
+
+        b['is_running'] = True
+        b['timeout_tracker'] = {}; b['last_processed'] = {}
+        
+        # Update Tombol: WEB MATI, START MATI, STOP NYALA
+        b['b_web'].configure(state="disabled", fg_color="#52525B")
+        b['b_start'].configure(state="disabled")
+        b['b_stop'].configure(state="normal", fg_color="#991B1B")
+        
         b['status_lbl'].configure(text=f"RUNNING ➜ {b['n_en'].get()}", text_color="#10B981")
         self.add_log("------------ BOT MULAI BERJALAN", b['n_en'].get(), "blue")
         threading.Thread(target=self.main_logic, args=(rid,), daemon=True).start()
 
     def bot_stop_ui(self, rid):
         b = self.bots[rid]; b['is_running'] = False
-        b['b_stop'].configure(state="disabled"); b['b_start'].configure(state="normal")
+        
+        # Update Tombol: WEB NYALA, START NYALA, STOP MATI
+        b['b_stop'].configure(state="disabled", fg_color="#52525B")
+        b['b_start'].configure(state="normal", fg_color="#166534")
+        b['b_web'].configure(state="normal", fg_color=self.color_main)
+        
         b['status_lbl'].configure(text=f"STOP ➜ {b['n_en'].get()}", text_color="#F59E0B")
         self.add_log("------------ BOT DIHENTIKAN (STOP)", b['n_en'].get(), "orange")
 
@@ -353,6 +366,7 @@ class AutomationBotApp(ctk.CTk):
         fn = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
         if fn: self.bots[r]['j_en'].delete(0, 'end'); self.bots[r]['j_en'].insert(0, fn); self.lock_logic(r)
 
+    # --- KEMBALI KE LIST DETAIL RULES ENGINE ---
     def refresh_config_list(self):
         for w in self.cfg_list_frame.winfo_children(): w.destroy()
         h = ctk.CTkFrame(self.cfg_list_frame, fg_color="transparent")
@@ -379,7 +393,6 @@ class AutomationBotApp(ctk.CTk):
 
     def save_cfg_json(self):
         d = {k: v.get().strip() for k, v in self.cfg_entries.items()}
-        # Logika penamaan file gabungan seperti sebelumnya
         raw_name = f"{d['Name Col']}_{d['Nominal Col']}_{d['Username Col']}_{d['Status Col']}"
         clean_name = re.sub(r'[^a-zA-Z0-9]', '', raw_name)
         file_name = f"cfg_{clean_name}.json"
@@ -388,6 +401,7 @@ class AutomationBotApp(ctk.CTk):
         for e in self.cfg_entries.values(): e.delete(0, 'end')
         self.refresh_config_list(); self.refresh_all_bot_dropdowns(); self.check_cfg_inputs()
 
+    # --- KEMBALI KE LIST DETAIL CONNECT SHEETS ---
     def refresh_link_list(self):
         for w in self.link_list_frame.winfo_children(): w.destroy()
         h = ctk.CTkFrame(self.link_list_frame, fg_color="transparent")
@@ -434,15 +448,19 @@ class AutomationBotApp(ctk.CTk):
             except: pass
 
     def bot_del(self, rid, frame):
-        if self.bots[rid]['driver']:
-            try: self.bots[rid]['driver'].quit()
-            except: pass
-        self.bots[rid]['status_lbl'].destroy(); del self.bots[rid]; frame.destroy()
+        if rid in self.bots:
+            if self.bots[rid]['driver']:
+                try: self.bots[rid]['driver'].quit()
+                except: pass
+            self.bots[rid]['status_lbl'].destroy(); del self.bots[rid]
+        frame.destroy()
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Tutup aplikasi?"):
             for b in self.bots.values():
-                if b['driver']: b['driver'].quit()
+                if b['driver']: 
+                    try: b['driver'].quit()
+                    except: pass
             self.save_session(); self.destroy(); os._exit(0)
 
 if __name__ == "__main__":
