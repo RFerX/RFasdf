@@ -283,7 +283,7 @@ class AutomationBotApp(ctk.CTk):
                     all_rows = sheet.get_all_values(); start_row = int(b['r_en'].get())
                     now = time.time(); pending_queue = []; updates = []
                     
-                    self.add_log(f"Mencari data pending (Baris {start_row}+)", bot_name, "blue")
+                    self.add_log(f"Mencari data pending...", bot_name, "blue")
                     for i, row in enumerate(all_rows[start_row-1:], start=start_row):
                         if not b['is_running']: break
                         if len(row) <= max(idx_map.values()): continue
