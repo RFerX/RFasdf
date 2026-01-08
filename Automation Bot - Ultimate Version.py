@@ -288,7 +288,7 @@ class AutomationBotApp(ctk.CTk):
                     )
                     
                     ctk.CTkLabel(c, text=detail_text, font=("Consolas", 11), justify="left", text_color="#E2E8F0").pack(side="left", padx=20, pady=15)
-                    ctk.CTkButton(c, text="HAPUS RULE", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_config_list(), self.refresh_all_bot_dropdowns()]).pack(side="right", padx=20)
+                    ctk.CTkButton(c, text="HAPUS", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_config_list(), self.refresh_all_bot_dropdowns()]).pack(side="right", padx=20)
                 except: pass
 
     def refresh_link_list(self):
@@ -311,7 +311,7 @@ class AutomationBotApp(ctk.CTk):
                     )
                     
                     ctk.CTkLabel(c, text=detail_text, font=("Consolas", 11), justify="left", text_color="#E2E8F0").pack(side="left", padx=20, pady=15)
-                    ctk.CTkButton(c, text="HAPUS SUMBER", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_link_list(), self.refresh_all_bot_dropdowns()]).pack(side="right", padx=20)
+                    ctk.CTkButton(c, text="HAPUS", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_link_list(), self.refresh_all_bot_dropdowns()]).pack(side="right", padx=20)
                 except: pass
 
     # --- HELPERS ---
