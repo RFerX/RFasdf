@@ -56,6 +56,7 @@ class AutomationBotApp(ctk.CTk):
         self.add_log("System initialized. Welcome and be smart.", "SYSTEM", "blue")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+    # --- PERBAIKAN LOGIKA ANIMASI ---
     def stop_placeholder_anim(self, event):
         """Berhenti animasi saat user klik/fokus ke entry"""
         self.is_animating = False
@@ -71,25 +72,33 @@ class AutomationBotApp(ctk.CTk):
         full_text = "Input Domain URL ........."
         
         def type_text(index):
-            # Cek apakah masih diizinkan beranimasi dan input kosong
-            if self.is_animating and not self.global_domain.get():
-                if index <= len(full_text):
-                    self.global_domain.configure(placeholder_text=full_text[:index])
-                    self.after(100, lambda: type_text(index + 1))
-                else:
-                    self.after(2000, lambda: erase_text(len(full_text)))
+            # Cek: Jika user sudah isi teks atau animasi dimatikan, STOP
+            if self.global_domain.get() or not self.is_animating:
+                self.global_domain.configure(placeholder_text="")
+                return
+
+            if index <= len(full_text):
+                self.global_domain.configure(placeholder_text=full_text[:index])
+                self.after(100, lambda: type_text(index + 1))
+            else:
+                self.after(2000, lambda: erase_text(len(full_text)))
 
         def erase_text(index):
-            if self.is_animating and not self.global_domain.get():
-                if index >= 0:
-                    self.global_domain.configure(placeholder_text=full_text[:index])
-                    self.after(50, lambda: erase_text(index - 1))
-                else:
-                    self.after(500, lambda: type_text(0))
+            # Cek: Jika user sudah isi teks atau animasi dimatikan, STOP
+            if self.global_domain.get() or not self.is_animating:
+                self.global_domain.configure(placeholder_text="")
+                return
 
-        if self.is_animating:
+            if index >= 0:
+                self.global_domain.configure(placeholder_text=full_text[:index])
+                self.after(50, lambda: erase_text(index - 1))
+            else:
+                self.after(500, lambda: type_text(0))
+
+        if self.is_animating and not self.global_domain.get():
             type_text(0)
 
+    # --- LOGIKA LOGGING ---
     def add_log(self, message, bot_display_name="SYSTEM", color="green"):
         self.after(0, self._process_log, message, bot_display_name, color)
 
@@ -122,7 +131,6 @@ class AutomationBotApp(ctk.CTk):
         self.global_domain = ctk.CTkEntry(domain_container, width=500, height=55, fg_color="transparent", border_width=0, font=("Consolas", 16, "bold"), text_color=self.color_main, placeholder_text="")
         self.global_domain.grid(row=0, column=1, padx=10, sticky="ew")
         
-        # BINDING UNTUK FIX MASALAH INPUT
         self.global_domain.bind("<FocusIn>", self.stop_placeholder_anim)
         self.global_domain.bind("<FocusOut>", self.start_placeholder_anim)
 
@@ -235,7 +243,6 @@ class AutomationBotApp(ctk.CTk):
         s_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
         j_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
 
-    # --- LOGIKA LIST DENGAN DETAIL LENGKAP ---
     def refresh_config_list(self):
         for w in self.cfg_list_frame.winfo_children(): w.destroy()
         for fn in sorted(os.listdir()):
@@ -267,7 +274,6 @@ class AutomationBotApp(ctk.CTk):
                     ctk.CTkButton(c, text="🗑", width=35, height=35, fg_color="#450a0a", command=lambda f=fn: [os.remove(f), self.refresh_link_list(), self.refresh_all_bot_dropdowns()]).pack(side="right", padx=10)
                 except: continue
 
-    # --- LOCK LOGIC BUTTONS ---
     def check_link_inputs(self): 
         ready = self.link_name.get().strip() and self.link_url.get().strip()
         self.btn_save_link.configure(state="normal" if ready else "disabled")
@@ -283,7 +289,6 @@ class AutomationBotApp(ctk.CTk):
                      b['cfg_dd'].get() != "Select", b['lnk_dd'].get() != "Select"])
         b['b_web'].configure(state="normal" if ready else "disabled", fg_color=self.color_main if ready else "#52525B")
 
-    # --- CORE BOT LOGIC ---
     def main_logic(self, rid):
         b = self.bots[rid]; bot_name = b['n_en'].get()
         try:
