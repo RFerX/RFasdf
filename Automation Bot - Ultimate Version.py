@@ -295,7 +295,7 @@ class AutomationBotApp(ctk.CTk):
         for w in self.link_list_frame.winfo_children(): w.destroy()
         h = ctk.CTkFrame(self.link_list_frame, fg_color="transparent")
         h.pack(fill="x", pady=(0,5))
-        ctk.CTkLabel(h, text="REGISTERED DATA SOURCES (GOOGLE SHEETS)", font=("Inter", 11, "bold"), text_color=self.color_main).pack(side="left", padx=10)
+        ctk.CTkLabel(h, text="REGISTERED DATA SOURCES", font=("Inter", 11, "bold"), text_color=self.color_main).pack(side="left", padx=10)
         
         for fn in sorted(os.listdir()):
             if fn.startswith("link_") and fn.endswith(".json"):
