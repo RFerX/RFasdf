@@ -83,7 +83,11 @@ class AutomationBotApp(ctk.CTk):
             else:
                 en.configure(text_color=self.color_error)
                 all_valid = False
-        self.btn_save_cfg.configure(state="normal" if all_valid else "disabled", fg_color=self.color_main if all_valid else "#52525B")
+        
+        if all_valid:
+            self.btn_save_cfg.configure(state="normal", fg_color=self.color_main)
+        else:
+            self.btn_save_cfg.configure(state="disabled", fg_color="#52525B")
 
     # --- UI SETUP ---
     def setup_ui(self):
@@ -120,28 +124,59 @@ class AutomationBotApp(ctk.CTk):
         self.tab_config = self.tabview.add("RULES ENGINE")
         self.tab_run = self.tabview.add("BOT INSTANCES")
 
-        self.setup_dashboard(); self.setup_link_tab(); self.setup_config_tab(); self.setup_running_tab()
+        self.setup_dashboard()
+        self.setup_link_tab()
+        self.setup_config_tab()
+        self.setup_running_tab()
 
     def setup_dashboard(self):
         self.log_box = ctk.CTkTextbox(self.tab_dash, fg_color="#050505", font=("Consolas", 14), border_width=1)
         self.log_box.pack(fill="both", expand=True, padx=15, pady=15)
 
     def setup_link_tab(self):
-        container = ctk.CTkFrame(self.tab_link, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
-        top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
+        container = ctk.CTkFrame(self.tab_link, fg_color="transparent")
+        container.pack(fill="both", expand=True, padx=30, pady=20)
+        
+        top_bar = ctk.CTkFrame(container, fg_color="transparent")
+        top_bar.pack(fill="x", pady=(0, 10))
         ctk.CTkButton(top_bar, text="🔄 Refresh", width=120, fg_color="#2E1065", command=self.refresh_link_list).pack(side="right")
-        input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_card.pack(fill="x", pady=10, padx=20)
-        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40); self.link_name.grid(row=0, column=0, padx=10, pady=20)
-        self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40); self.link_url.grid(row=0, column=1, padx=10, pady=20)
-        self.btn_save_link = ctk.CTkButton(input_card, text="SAVE LINK", fg_color=self.color_main, height=40, command=self.save_link_json, state="disabled"); self.btn_save_link.grid(row=0, column=2, padx=10, pady=20)
-        self.link_name.bind("<KeyRelease>", lambda e: self.check_link_inputs()); self.link_url.bind("<KeyRelease>", lambda e: self.check_link_inputs())
-        self.link_list_frame = ctk.CTkScrollableFrame(container, fg_color="transparent"); self.link_list_frame.pack(fill="both", expand=True, pady=20)
+        
+        input_card = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A")
+        input_card.pack(fill="x", pady=10, padx=20)
+        
+        self.link_name = ctk.CTkEntry(input_card, width=250, placeholder_text="Sheet Category", height=40)
+        self.link_name.grid(row=0, column=0, padx=10, pady=20)
+        
+        self.link_url = ctk.CTkEntry(input_card, width=500, placeholder_text="Full Google Sheet URL", height=40)
+        self.link_url.grid(row=0, column=1, padx=10, pady=20)
+        
+        self.btn_save_link = ctk.CTkButton(
+            input_card, 
+            text="SAVE LINK", 
+            fg_color="#52525B", 
+            height=40, 
+            command=self.save_link_json, 
+            state="disabled"
+        )
+        self.btn_save_link.grid(row=0, column=2, padx=10, pady=20)
+        
+        self.link_list_frame = ctk.CTkScrollableFrame(container, fg_color="transparent")
+        self.link_list_frame.pack(fill="both", expand=True, pady=20)
+        
+        self.link_name.bind("<KeyRelease>", lambda e: self.check_link_inputs())
+        self.link_url.bind("<KeyRelease>", lambda e: self.check_link_inputs())
 
     def setup_config_tab(self):
-        container = ctk.CTkFrame(self.tab_config, fg_color="transparent"); container.pack(fill="both", expand=True, padx=30, pady=20)
-        top_bar = ctk.CTkFrame(container, fg_color="transparent"); top_bar.pack(fill="x", pady=(0, 10))
+        container = ctk.CTkFrame(self.tab_config, fg_color="transparent")
+        container.pack(fill="both", expand=True, padx=30, pady=20)
+        
+        top_bar = ctk.CTkFrame(container, fg_color="transparent")
+        top_bar.pack(fill="x", pady=(0, 10))
         ctk.CTkButton(top_bar, text="🔄 Refresh", width=120, fg_color="#2E1065", command=self.refresh_config_list).pack(side="right")
-        input_grid = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A"); input_grid.pack(fill="x", padx=20, pady=10)
+        
+        input_grid = ctk.CTkFrame(container, fg_color="#1C1C20", border_width=1, border_color="#27272A")
+        input_grid.pack(fill="x", padx=20, pady=10)
+        
         self.cfg_entries = {}
         labels = ["Name Col", "Nominal Col", "Username Col", "Status Col", "Max", "Timeout (m)", "DupTime (m)"]
         for i, label in enumerate(labels):
@@ -151,57 +186,91 @@ class AutomationBotApp(ctk.CTk):
             en.grid(row=r+1, column=c, padx=15, pady=(0, 15), sticky="w")
             en.bind("<KeyRelease>", lambda e: self.check_cfg_inputs())
             self.cfg_entries[label] = en
-        self.btn_save_cfg = ctk.CTkButton(input_grid, text="SAVE RULE", fg_color=self.color_main, width=200, height=40, command=self.save_cfg_json, state="disabled"); self.btn_save_cfg.grid(row=3, column=3, pady=20, padx=15, sticky="e")
-        self.cfg_list_frame = ctk.CTkScrollableFrame(container, fg_color="transparent"); self.cfg_list_frame.pack(fill="both", expand=True, pady=10)
+            
+        self.btn_save_cfg = ctk.CTkButton(
+            input_grid, 
+            text="SAVE RULE", 
+            fg_color="#52525B",
+            width=200, 
+            height=40, 
+            command=self.save_cfg_json, 
+            state="disabled"
+        )
+        self.btn_save_cfg.grid(row=3, column=3, pady=20, padx=15, sticky="e")
+        
+        self.cfg_list_frame = ctk.CTkScrollableFrame(container, fg_color="transparent")
+        self.cfg_list_frame.pack(fill="both", expand=True, pady=10)
 
     def setup_running_tab(self):
-        top = ctk.CTkFrame(self.tab_run, fg_color="transparent"); top.pack(fill="x", padx=20, pady=15)
+        top = ctk.CTkFrame(self.tab_run, fg_color="transparent")
+        top.pack(fill="x", padx=20, pady=15)
         ctk.CTkButton(top, text="+ DEPLOY NEW BOT", fg_color=self.color_main, height=45, font=("Inter", 13, "bold"), command=self.add_bot_row).pack(side="left")
         ctk.CTkButton(top, text="Refresh", fg_color="#2E1065", width=150, height=45, command=self.refresh_all_bot_dropdowns).pack(side="right")
-        self.h_row = ctk.CTkFrame(self.tab_run, fg_color="#1F1F23", height=45); self.h_row.pack(fill="x", padx=20, pady=(10, 0))
+        
+        self.h_row = ctk.CTkFrame(self.tab_run, fg_color="#1F1F23", height=45)
+        self.h_row.pack(fill="x", padx=20, pady=(10, 0))
         headers = ["IDENTIFIER", "SHEET", "ROW", "CONFIG", "DATA SOURCE", "JSON KEY", "COMMANDS"]
         for i, txt in enumerate(headers):
             self.h_row.grid_columnconfigure(i, weight=self.col_weights[i])
             ctk.CTkLabel(self.h_row, text=txt, font=("Inter", 10, "bold"), text_color="gray").grid(row=0, column=i, padx=5, sticky="nsew")
-        self.run_container = ctk.CTkScrollableFrame(self.tab_run, fg_color="transparent"); self.run_container.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+            
+        self.run_container = ctk.CTkScrollableFrame(self.tab_run, fg_color="transparent")
+        self.run_container.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
     def add_bot_row(self, saved_info=None):
         rid = f"Bot_{int(time.time() * 1000)}"
-        row_card = ctk.CTkFrame(self.run_container, fg_color="#16161A", border_color="#27272A", border_width=1); row_card.pack(fill="x", pady=5)
+        row_card = ctk.CTkFrame(self.run_container, fg_color="#16161A", border_color="#27272A", border_width=1)
+        row_card.pack(fill="x", pady=5)
         for i, w in enumerate(self.col_weights): row_card.grid_columnconfigure(i, weight=w)
         
         n_en = ctk.CTkEntry(row_card, height=35); n_en.grid(row=0, column=0, padx=8, pady=12, sticky="ew")
         s_en = ctk.CTkEntry(row_card, height=35); s_en.grid(row=0, column=1, padx=8, pady=12, sticky="ew")
         r_en = ctk.CTkEntry(row_card, height=35); r_en.insert(0, "2"); r_en.grid(row=0, column=2, padx=8, pady=12, sticky="ew")
-        cfg_dd = ctk.CTkOptionMenu(row_card, values=["Select"]+sorted([f for f in os.listdir() if f.startswith("cfg_")]), height=35); cfg_dd.set("Select"); cfg_dd.grid(row=0, column=3, padx=8, pady=12, sticky="ew")
-        lnk_dd = ctk.CTkOptionMenu(row_card, values=["Select"]+sorted([f for f in os.listdir() if f.startswith("link_")]), height=35); lnk_dd.set("Select"); lnk_dd.grid(row=0, column=4, padx=8, pady=12, sticky="ew")
-        j_f = ctk.CTkFrame(row_card, fg_color="transparent"); j_f.grid(row=0, column=5, padx=8, pady=12, sticky="ew")
+        
+        cfg_dd = ctk.CTkOptionMenu(row_card, values=["Select"]+sorted([f for f in os.listdir() if f.startswith("cfg_")]), height=35)
+        cfg_dd.set("Select"); cfg_dd.grid(row=0, column=3, padx=8, pady=12, sticky="ew")
+        
+        lnk_dd = ctk.CTkOptionMenu(row_card, values=["Select"]+sorted([f for f in os.listdir() if f.startswith("link_")]), height=35)
+        lnk_dd.set("Select"); lnk_dd.grid(row=0, column=4, padx=8, pady=12, sticky="ew")
+        
+        j_f = ctk.CTkFrame(row_card, fg_color="transparent")
+        j_f.grid(row=0, column=5, padx=8, pady=12, sticky="ew")
         j_en = ctk.CTkEntry(j_f, height=35); j_en.pack(side="left", fill="x", expand=True)
         ctk.CTkButton(j_f, text="📂", width=35, height=35, command=lambda r=rid: self.browse_json_path(r)).pack(side="left", padx=(2,0))
         
-        btn_c = ctk.CTkFrame(row_card, fg_color="transparent"); btn_c.grid(row=0, column=6, padx=8, pady=12, sticky="ew")
-        b_web = ctk.CTkButton(btn_c, text="WEB", width=65, state="disabled", command=lambda r=rid: self.bot_open_ui(r)); b_web.pack(side="left", padx=2)
-        b_start = ctk.CTkButton(btn_c, text="START", width=60, state="disabled", fg_color="#166534", command=lambda r=rid: self.bot_start_ui(r)); b_start.pack(side="left", padx=2)
-        b_stop = ctk.CTkButton(btn_c, text="STOP", width=60, state="disabled", fg_color="#991B1B", command=lambda r=rid: self.bot_stop_ui(r)); b_stop.pack(side="left", padx=2)
+        btn_c = ctk.CTkFrame(row_card, fg_color="transparent")
+        btn_c.grid(row=0, column=6, padx=8, pady=12, sticky="ew")
+        
+        b_web = ctk.CTkButton(btn_c, text="WEB", width=65, state="disabled", command=lambda r=rid: self.bot_open_ui(r))
+        b_web.pack(side="left", padx=2)
+        
+        b_start = ctk.CTkButton(btn_c, text="START", width=60, state="disabled", fg_color="#166534", command=lambda r=rid: self.bot_start_ui(r))
+        b_start.pack(side="left", padx=2)
+        
+        b_stop = ctk.CTkButton(btn_c, text="STOP", width=60, state="disabled", fg_color="#991B1B", command=lambda r=rid: self.bot_stop_ui(r))
+        b_stop.pack(side="left", padx=2)
+        
         ctk.CTkButton(btn_c, text="×", width=35, fg_color="transparent", command=lambda r=rid, f=row_card: self.bot_del(r, f)).pack(side="left", padx=2)
         
         status_lbl = ctk.CTkLabel(self.status_container, text=f"IDLE ➜ {rid}", font=("Consolas", 17), text_color="#52525B", anchor="w")
         status_lbl.pack(fill="x", padx=15, pady=8)
         
         self.bots[rid] = {'n_en': n_en, 's_en': s_en, 'r_en': r_en, 'cfg_dd': cfg_dd, 'lnk_dd': lnk_dd, 'j_en': j_en, 'b_web': b_web, 'b_start': b_start, 'b_stop': b_stop, 'status_lbl': status_lbl, 'driver': None, 'is_running': False, 'timeout_tracker': {}, 'last_processed': {}}
+        
         if saved_info:
-            n_en.insert(0, saved_info.get('identifier', '')); s_en.insert(0, saved_info.get('sheet', '')); r_en.delete(0, 'end'); r_en.insert(0, saved_info.get('row', '2'))
+            n_en.insert(0, saved_info.get('identifier', ''))
+            s_en.insert(0, saved_info.get('sheet', ''))
+            r_en.delete(0, 'end'); r_en.insert(0, saved_info.get('row', '2'))
             if saved_info.get('config') in cfg_dd.cget("values"): cfg_dd.set(saved_info['config'])
             if saved_info.get('link') in lnk_dd.cget("values"): lnk_dd.set(saved_info['link'])
             j_en.insert(0, saved_info.get('json_path', ''))
 
-        n_en.bind("<KeyRelease>", lambda e: self.update_all_locks()) # Pakai update_all_locks
+        n_en.bind("<KeyRelease>", lambda e: self.update_all_locks()) 
         s_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
         j_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
-        
-        self.update_all_locks() # Jalankan saat pertama kali baris muncul
-   
-   # --- BOT CORE ---
+        self.update_all_locks()
+
+    # --- BOT CORE ---
     def main_logic(self, rid):
         b = self.bots[rid]
         bot_name = b['n_en'].get()
@@ -315,12 +384,11 @@ class AutomationBotApp(ctk.CTk):
 
     def bot_start_ui(self, rid):
         b = self.bots[rid]
-        # Navigasi URL
         try:
             base_url = self.global_domain.get().strip()
             if base_url.endswith('/'): base_url = base_url[:-1]
             if not base_url.startswith("http"): base_url = "https://" + base_url
-            target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
+            target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName"
             if b['driver']:
                 b['driver'].get(target_url)
                 self.add_log(f"Navigasi ke: {target_url}", b['n_en'].get(), "blue")
@@ -329,20 +397,15 @@ class AutomationBotApp(ctk.CTk):
             return
 
         b['is_running'] = True
-        
-        # --- KUNCI SEMUA INPUT (Agar tidak bisa diedit saat running) ---
         b['n_en'].configure(state="disabled")
         b['s_en'].configure(state="disabled")
         b['r_en'].configure(state="disabled")
         b['cfg_dd'].configure(state="disabled")
         b['lnk_dd'].configure(state="disabled")
         b['j_en'].configure(state="disabled")
-
-        # Update status tombol
         b['b_web'].configure(state="disabled", fg_color="#52525B")
         b['b_start'].configure(state="disabled")
         b['b_stop'].configure(state="normal", fg_color="#991B1B")
-        
         b['status_lbl'].configure(text=f"RUNNING ➜ {b['n_en'].get()}", text_color="#10B981")
         self.add_log("------------ BOT MULAI BERJALAN", b['n_en'].get(), "blue")
         threading.Thread(target=self.main_logic, args=(rid,), daemon=True).start()
@@ -350,47 +413,35 @@ class AutomationBotApp(ctk.CTk):
     def bot_stop_ui(self, rid):
         b = self.bots[rid]
         b['is_running'] = False
-        
-        # --- BUKA KUNCI INPUT (Agar bisa diedit kembali) ---
         b['n_en'].configure(state="normal")
         b['s_en'].configure(state="normal")
         b['r_en'].configure(state="normal")
         b['cfg_dd'].configure(state="normal")
         b['lnk_dd'].configure(state="normal")
         b['j_en'].configure(state="normal")
-
-        # Update status tombol
         b['b_stop'].configure(state="disabled", fg_color="#52525B")
         b['b_start'].configure(state="normal", fg_color="#166534")
         b['b_web'].configure(state="normal", fg_color=self.color_main)
-        
         b['status_lbl'].configure(text=f"STOP ➜ {b['n_en'].get()}", text_color="#F59E0B")
         self.add_log("------------ BOT DIHENTIKAN (STOP)", b['n_en'].get(), "orange")
-        
-        # Jalankan ulang validasi lock_logic
         self.lock_logic(rid)
-   
-    # --- Tambahkan atau Ganti Fungsi Ini ---
+
     def lock_logic(self, rid):
         b = self.bots[rid]
         domain = self.global_domain.get().strip()
         current_name = b['n_en'].get().strip()
         
-        # 1. Cek Duplikat Nama
         name_is_duplicate = False
         if current_name:
             all_names = [bot['n_en'].get().strip() for bot in self.bots.values() if bot['n_en'].get().strip()]
             if all_names.count(current_name) > 1:
                 name_is_duplicate = True
 
-        # Atur Warna Text (Merah jika duplikat)
         if name_is_duplicate:
             b['n_en'].configure(text_color=self.color_error)
         else:
             b['n_en'].configure(text_color="white")
 
-        # 2. Syarat Tombol WEB Aktif
-        # Syarat: Domain ada, Nama ada, Tidak Duplikat, Sheet ada, JSON ada, Dropdown terpilih
         ready = all([
             domain, 
             current_name, 
@@ -401,7 +452,6 @@ class AutomationBotApp(ctk.CTk):
             b['lnk_dd'].get() != "Select"
         ])
         
-        # Tombol WEB hanya menyala jika bot tidak sedang jalan DAN data lengkap
         if not b.get('is_running', False):
             b['b_web'].configure(
                 state="normal" if ready else "disabled", 
@@ -417,12 +467,13 @@ class AutomationBotApp(ctk.CTk):
         for c in letter.upper().strip(): idx = idx * 26 + (ord(c) - ord('A') + 1)
         return idx - 1
 
-    # --- UI HELPERS ---
     def browse_json_path(self, r):
         fn = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
-        if fn: self.bots[r]['j_en'].delete(0, 'end'); self.bots[r]['j_en'].insert(0, fn); self.lock_logic(r)
+        if fn: 
+            self.bots[r]['j_en'].delete(0, 'end')
+            self.bots[r]['j_en'].insert(0, fn)
+            self.lock_logic(r)
 
-    # --- KEMBALI KE LIST DETAIL RULES ENGINE ---
     def refresh_config_list(self):
         for w in self.cfg_list_frame.winfo_children(): w.destroy()
         h = ctk.CTkFrame(self.cfg_list_frame, fg_color="transparent")
@@ -435,14 +486,12 @@ class AutomationBotApp(ctk.CTk):
                     with open(fn, "r") as f: d = json.load(f)
                     c = ctk.CTkFrame(self.cfg_list_frame, fg_color="#1C1C20", border_width=1, border_color=self.color_main)
                     c.pack(fill="x", pady=5, padx=5)
-                    
                     detail_text = (
                         f"📁 FILE: {fn}\n"
                         f"------------------------------------------------------------------------------------------------------------------------\n"
                         f"📍 KOLOM NAMA: {d.get('Name Col')}  |  📍 KOLOM NOMINAL: {d.get('Nominal Col')}  |  📍 KOLOM USERNAME: {d.get('Username Col')}  |  📍 KOLOM STATUS: {d.get('Status Col')}\n"
                         f"⚙️ BATAS MAKSIMAL: {d.get('Max')} Baris  |  ⏳ TIMEOUT: {d.get('Timeout (m)')} Menit  |  🔄 CEK DUPLIKAT: {d.get('DupTime (m)')} Menit"
                     )
-                    
                     ctk.CTkLabel(c, text=detail_text, font=("Consolas", 11), justify="left", text_color="#E2E8F0").pack(side="left", padx=20, pady=15)
                     ctk.CTkButton(c, text="HAPUS", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_config_list()]).pack(side="right", padx=20)
                 except: pass
@@ -457,7 +506,6 @@ class AutomationBotApp(ctk.CTk):
         for e in self.cfg_entries.values(): e.delete(0, 'end')
         self.refresh_config_list(); self.refresh_all_bot_dropdowns(); self.check_cfg_inputs()
 
-    # --- KEMBALI KE LIST DETAIL CONNECT SHEETS ---
     def refresh_link_list(self):
         for w in self.link_list_frame.winfo_children(): w.destroy()
         h = ctk.CTkFrame(self.link_list_frame, fg_color="transparent")
@@ -470,23 +518,34 @@ class AutomationBotApp(ctk.CTk):
                     with open(fn, "r") as f: d = json.load(f)
                     c = ctk.CTkFrame(self.link_list_frame, fg_color="#1C1C20", border_width=1, border_color=self.color_main)
                     c.pack(fill="x", pady=5, padx=5)
-                    
                     detail_text = (
                         f"🏷️ NAMA KATEGORI : {d.get('name')}\n"
                         f"🔗 URL GOOGLE SHEET: {d.get('url')}"
                     )
-                    
                     ctk.CTkLabel(c, text=detail_text, font=("Consolas", 11), justify="left", text_color="#E2E8F0").pack(side="left", padx=20, pady=15)
                     ctk.CTkButton(c, text="HAPUS", width=100, height=40, fg_color="#450a0a", hover_color="#EF4444", command=lambda f=fn: [os.remove(f), self.refresh_link_list()]).pack(side="right", padx=20)
                 except: pass
 
-    def save_link_json(self):
-        d = {"name": self.link_name.get().strip(), "url": self.link_url.get().strip()}
-        with open(f"link_{d['name']}.json", "w") as j: json.dump(d, j, indent=4)
-        self.link_name.delete(0, 'end'); self.link_url.delete(0, 'end'); self.refresh_link_list(); self.refresh_all_bot_dropdowns()
+    def check_link_inputs(self):
+        name_ok = len(self.link_name.get().strip()) > 0
+        url_ok = len(self.link_url.get().strip()) > 0
+        if name_ok and url_ok:
+            self.btn_save_link.configure(state="normal", fg_color=self.color_main)
+        else:
+            self.btn_save_link.configure(state="disabled", fg_color="#52525B")
 
-    def check_link_inputs(self): self.btn_save_link.configure(state="normal" if (self.link_name.get().strip() and self.link_url.get().strip()) else "disabled")
-    
+    def save_link_json(self):
+        name = self.link_name.get().strip()
+        url = self.link_url.get().strip()
+        d = {"name": name, "url": url}
+        with open(f"link_{name}.json", "w") as j: 
+            json.dump(d, j, indent=4)
+        self.link_name.delete(0, 'end')
+        self.link_url.delete(0, 'end')
+        self.check_link_inputs()
+        self.refresh_link_list()
+        self.refresh_all_bot_dropdowns()
+
     def refresh_all_bot_dropdowns(self):
         cf = ["Select"] + sorted([f for f in os.listdir() if f.startswith("cfg_")])
         ln = ["Select"] + sorted([f for f in os.listdir() if f.startswith("link_")])
@@ -521,4 +580,3 @@ class AutomationBotApp(ctk.CTk):
 
 if __name__ == "__main__":
     app = AutomationBotApp(); app.mainloop()
-
