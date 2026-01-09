@@ -195,9 +195,13 @@ class AutomationBotApp(ctk.CTk):
             if saved_info.get('link') in lnk_dd.cget("values"): lnk_dd.set(saved_info['link'])
             j_en.insert(0, saved_info.get('json_path', ''))
 
-        n_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); s_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); j_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r)); self.lock_logic(rid)
-
-    # --- BOT CORE ---
+        n_en.bind("<KeyRelease>", lambda e: self.update_all_locks()) # Pakai update_all_locks
+        s_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
+        j_en.bind("<KeyRelease>", lambda e, r=rid: self.lock_logic(r))
+        
+        self.update_all_locks() # Jalankan saat pertama kali baris muncul
+   
+   # --- BOT CORE ---
     def main_logic(self, rid):
         b = self.bots[rid]
         bot_name = b['n_en'].get()
@@ -311,13 +315,12 @@ class AutomationBotApp(ctk.CTk):
 
     def bot_start_ui(self, rid):
         b = self.bots[rid]
-        # Pindah ke Link Khusus Deposit
+        # Navigasi URL
         try:
             base_url = self.global_domain.get().strip()
             if base_url.endswith('/'): base_url = base_url[:-1]
             if not base_url.startswith("http"): base_url = "https://" + base_url
             target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName"
-            
             if b['driver']:
                 b['driver'].get(target_url)
                 self.add_log(f"Navigasi ke: {target_url}", b['n_en'].get(), "blue")
@@ -326,9 +329,16 @@ class AutomationBotApp(ctk.CTk):
             return
 
         b['is_running'] = True
-        b['timeout_tracker'] = {}; b['last_processed'] = {}
         
-        # Update Tombol: WEB MATI, START MATI, STOP NYALA
+        # --- KUNCI SEMUA INPUT (Agar tidak bisa diedit saat running) ---
+        b['n_en'].configure(state="disabled")
+        b['s_en'].configure(state="disabled")
+        b['r_en'].configure(state="disabled")
+        b['cfg_dd'].configure(state="disabled")
+        b['lnk_dd'].configure(state="disabled")
+        b['j_en'].configure(state="disabled")
+
+        # Update status tombol
         b['b_web'].configure(state="disabled", fg_color="#52525B")
         b['b_start'].configure(state="disabled")
         b['b_stop'].configure(state="normal", fg_color="#991B1B")
@@ -336,26 +346,72 @@ class AutomationBotApp(ctk.CTk):
         b['status_lbl'].configure(text=f"RUNNING ➜ {b['n_en'].get()}", text_color="#10B981")
         self.add_log("------------ BOT MULAI BERJALAN", b['n_en'].get(), "blue")
         threading.Thread(target=self.main_logic, args=(rid,), daemon=True).start()
-
+    
     def bot_stop_ui(self, rid):
-        b = self.bots[rid]; b['is_running'] = False
+        b = self.bots[rid]
+        b['is_running'] = False
         
-        # Update Tombol: WEB NYALA, START NYALA, STOP MATI
+        # --- BUKA KUNCI INPUT (Agar bisa diedit kembali) ---
+        b['n_en'].configure(state="normal")
+        b['s_en'].configure(state="normal")
+        b['r_en'].configure(state="normal")
+        b['cfg_dd'].configure(state="normal")
+        b['lnk_dd'].configure(state="normal")
+        b['j_en'].configure(state="normal")
+
+        # Update status tombol
         b['b_stop'].configure(state="disabled", fg_color="#52525B")
         b['b_start'].configure(state="normal", fg_color="#166534")
         b['b_web'].configure(state="normal", fg_color=self.color_main)
         
         b['status_lbl'].configure(text=f"STOP ➜ {b['n_en'].get()}", text_color="#F59E0B")
         self.add_log("------------ BOT DIHENTIKAN (STOP)", b['n_en'].get(), "orange")
-
+        
+        # Jalankan ulang validasi lock_logic
+        self.lock_logic(rid)
+   
+    # --- Tambahkan atau Ganti Fungsi Ini ---
     def lock_logic(self, rid):
-        b = self.bots[rid]; domain = self.global_domain.get().strip()
-        ready = all([domain, b['n_en'].get().strip(), b['s_en'].get().strip(), b['j_en'].get().strip(), b['cfg_dd'].get() != "Select", b['lnk_dd'].get() != "Select"])
-        b['b_web'].configure(state="normal" if ready else "disabled", fg_color=self.color_main if ready else "#52525B")
+        b = self.bots[rid]
+        domain = self.global_domain.get().strip()
+        current_name = b['n_en'].get().strip()
+        
+        # 1. Cek Duplikat Nama
+        name_is_duplicate = False
+        if current_name:
+            all_names = [bot['n_en'].get().strip() for bot in self.bots.values() if bot['n_en'].get().strip()]
+            if all_names.count(current_name) > 1:
+                name_is_duplicate = True
 
+        # Atur Warna Text (Merah jika duplikat)
+        if name_is_duplicate:
+            b['n_en'].configure(text_color=self.color_error)
+        else:
+            b['n_en'].configure(text_color="white")
+
+        # 2. Syarat Tombol WEB Aktif
+        # Syarat: Domain ada, Nama ada, Tidak Duplikat, Sheet ada, JSON ada, Dropdown terpilih
+        ready = all([
+            domain, 
+            current_name, 
+            not name_is_duplicate,
+            b['s_en'].get().strip(), 
+            b['j_en'].get().strip(), 
+            b['cfg_dd'].get() != "Select", 
+            b['lnk_dd'].get() != "Select"
+        ])
+        
+        # Tombol WEB hanya menyala jika bot tidak sedang jalan DAN data lengkap
+        if not b.get('is_running', False):
+            b['b_web'].configure(
+                state="normal" if ready else "disabled", 
+                fg_color=self.color_main if ready else "#52525B"
+            )
+            
     def update_all_locks(self):
-        for rid in self.bots: self.lock_logic(rid)
-
+        for rid in list(self.bots.keys()): 
+            self.lock_logic(rid)
+            
     def col_to_idx(self, letter):
         idx = 0
         for c in letter.upper().strip(): idx = idx * 26 + (ord(c) - ord('A') + 1)
@@ -465,4 +521,3 @@ class AutomationBotApp(ctk.CTk):
 
 if __name__ == "__main__":
     app = AutomationBotApp(); app.mainloop()
-
