@@ -388,7 +388,7 @@ class AutomationBotApp(ctk.CTk):
             base_url = self.global_domain.get().strip()
             if base_url.endswith('/'): base_url = base_url[:-1]
             if not base_url.startswith("http"): base_url = "https://" + base_url
-            target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName"
+            target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
             if b['driver']:
                 b['driver'].get(target_url)
                 self.add_log(f"Navigasi ke: {target_url}", b['n_en'].get(), "blue")
@@ -580,3 +580,4 @@ class AutomationBotApp(ctk.CTk):
 
 if __name__ == "__main__":
     app = AutomationBotApp(); app.mainloop()
+
