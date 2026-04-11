@@ -391,7 +391,7 @@ class AutomationBotApp(ctk.CTk):
             target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
             if b['driver']:
                 b['driver'].get(target_url)
-                self.add_log("Navigasi ke Halaman Deposit", b['n_en'].get(), "blue")
+                self.add_log("Navigasi ke Halaman Deposit...", b['n_en'].get(), "blue")
         except Exception as e:
             self.add_log("Error !!!", "", "red")
             return
@@ -407,7 +407,7 @@ class AutomationBotApp(ctk.CTk):
         b['b_start'].configure(state="disabled")
         b['b_stop'].configure(state="normal", fg_color="#991B1B")
         b['status_lbl'].configure(text=f"RUNNING ➜ {b['n_en'].get()}", text_color="#10B981")
-        self.add_log("------------ BOT Mulai Berjalan", b['n_en'].get(), "blue")
+        self.add_log("------------ BOT Mulai Berjalan...", b['n_en'].get(), "blue")
         threading.Thread(target=self.main_logic, args=(rid,), daemon=True).start()
     
     def bot_stop_ui(self, rid):
