@@ -391,9 +391,9 @@ class AutomationBotApp(ctk.CTk):
             target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
             if b['driver']:
                 b['driver'].get(target_url)
-                self.add_log(f"Navigasi ke: {target_url}", b['n_en'].get(), "blue")
+                self.add_log("Navigasi ke Halaman Login", b['n_en'].get(), "blue")
         except Exception as e:
-            self.add_log(f"Gagal navigasi: {str(e)}", b['n_en'].get(), "red")
+            self.add_log("Navigasi Gagal", "", "red")
             return
 
         b['is_running'] = True
@@ -580,4 +580,3 @@ class AutomationBotApp(ctk.CTk):
 
 if __name__ == "__main__":
     app = AutomationBotApp(); app.mainloop()
-
