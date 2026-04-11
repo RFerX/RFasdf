@@ -98,7 +98,7 @@ class AutomationBotApp(ctk.CTk):
         logo_f = ctk.CTkFrame(self.header, fg_color="transparent")
         logo_f.pack(side="left", padx=50)
         ctk.CTkLabel(logo_f, text="Automation Bot V1", font=("Impact", 56), text_color=self.color_main).pack(side="top", anchor="w")
-        ctk.CTkLabel(logo_f, text="By RFer-X Garasi", font=("Consolas", 13, "bold"), text_color=self.color_accent).pack(side="top", anchor="w", padx=5)
+        ctk.CTkLabel(logo_f, text="By RFer-X", font=("Consolas", 13, "bold"), text_color=self.color_accent).pack(side="top", anchor="w", padx=5)
         
         domain_container = ctk.CTkFrame(self.header, fg_color=self.color_bg, corner_radius=12, height=60, width=550)
         domain_container.pack(side="right", padx=50, pady=40); domain_container.pack_propagate(False)
