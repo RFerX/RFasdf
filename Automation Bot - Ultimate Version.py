@@ -359,8 +359,8 @@ class AutomationBotApp(ctk.CTk):
                         WebDriverWait(driver, 5).until(EC.alert_is_present()); driver.switch_to.alert.accept()
                         return username_web
                 except: continue
-        except: pass
-        return None
+        except Exception as e:
+                self.add_log(str(e), "SYSTEM", "red")
 
     # --- CONTROLS ---
     def bot_open_ui(self, rid):
@@ -391,9 +391,9 @@ class AutomationBotApp(ctk.CTk):
             target_url = f"{base_url}/_SubAg_Sub/DepositRequest.aspx?role=sa&userName=al3"
             if b['driver']:
                 b['driver'].get(target_url)
-                self.add_log("Navigasi ke Halaman Login", b['n_en'].get(), "blue")
+                self.add_log("Navigasi ke Halaman Deposit", b['n_en'].get(), "blue")
         except Exception as e:
-            self.add_log("Navigasi Gagal", "", "red")
+            self.add_log("Error !!!", "", "red")
             return
 
         b['is_running'] = True
