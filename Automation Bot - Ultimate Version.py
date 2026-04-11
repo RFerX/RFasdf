@@ -275,7 +275,7 @@ class AutomationBotApp(ctk.CTk):
         b = self.bots[rid]
         bot_name = b['n_en'].get()
         try:
-            self.add_log("------------ MENGAMBIL DATA DARI SHEET...", bot_name, "blue")
+            self.add_log("------------ Mengambil Data dari Sheet...", bot_name, "blue")
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
             creds = ServiceAccountCredentials.from_json_keyfile_name(b['j_en'].get(), scope)
             client = gspread.authorize(creds)
@@ -407,7 +407,7 @@ class AutomationBotApp(ctk.CTk):
         b['b_start'].configure(state="disabled")
         b['b_stop'].configure(state="normal", fg_color="#991B1B")
         b['status_lbl'].configure(text=f"RUNNING ➜ {b['n_en'].get()}", text_color="#10B981")
-        self.add_log("------------ BOT MULAI BERJALAN", b['n_en'].get(), "blue")
+        self.add_log("------------ BOT Mulai Berjalan", b['n_en'].get(), "blue")
         threading.Thread(target=self.main_logic, args=(rid,), daemon=True).start()
     
     def bot_stop_ui(self, rid):
