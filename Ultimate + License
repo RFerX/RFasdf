@@ -603,24 +603,69 @@ class AutomationBotApp(ctk.CTk):
 
 def ask_license():
     import customtkinter as ctk
-    from tkinter import messagebox
 
+    ctk.set_appearance_mode("dark")
+    
     win = ctk.CTk()
-    win.geometry("400x250")
-    win.title("License Check")
+    win.geometry("450x320")
+    win.title("License Activation")
+    win.configure(fg_color="#0A0A0B")
+    
+    win.resizable(False, False)
 
-    label = ctk.CTkLabel(win, text="Masukkan License Key")
-    label.pack(pady=20)
+# --- CARD CONTAINER ---
+    card = ctk.CTkFrame(
+        win,
+        fg_color="#141417",
+        corner_radius=15,
+        border_width=1,
+        border_color="#27272A"
+    )
+    card.pack(expand=True, fill="both", padx=20, pady=20)
 
-    entry = ctk.CTkEntry(win, width=300)
-    entry.pack(pady=10)
+    # --- TITLE ---
+    title = ctk.CTkLabel(
+        card,
+        text="🔐 ACTIVATION REQUIRED",
+        font=("Impact", 24),
+        text_color="#A855F7"
+    )
+    title.pack(pady=(25, 10))
 
-    status_label = ctk.CTkLabel(win, text="", text_color="red")
+    subtitle = ctk.CTkLabel(
+        card,
+        text="Please Enter Your License Key To Proceed",
+        font=("Consolas", 12),
+        text_color="#00F5FF"
+    )
+    subtitle.pack(pady=(10, 10))
+
+    # --- INPUT ---
+    entry = ctk.CTkEntry(
+        card,
+        width=300,
+        height=45,
+        corner_radius=10,
+        fg_color="#0A0A0B",
+        border_width=1,            # tebal garis
+        border_color="#A855F7",    # warna ungu
+        font=("Consolas", 14),
+        placeholder_text=""
+    )
+    entry.pack(pady=(1, 10))
+
+    # --- STATUS ---
+    status_label = ctk.CTkLabel(
+        card,
+        text="",
+        font=("Consolas", 12),
+        text_color="#EF4444"
+    )
     status_label.pack(pady=5)
 
+    # --- BUTTON ---
     def submit():
         key = entry.get().strip()
-
         app = AutomationBotApp()
 
         if app.check_license(key):
@@ -628,15 +673,22 @@ def ask_license():
             app = AutomationBotApp()
             app.mainloop()
         else:
-            status_label.configure(text="License salah / tidak aktif")
+            status_label.configure(text="❌ License tidak valid / inactive")
             entry.delete(0, 'end')
-            entry.focus()
 
-    btn = ctk.CTkButton(win, text="Activate", command=submit)
+    btn = ctk.CTkButton(
+        card,
+        text="ACTIVATE",
+        height=45,
+        fg_color="#A855F7",
+        hover_color="#9333EA",
+        corner_radius=10,
+        font=("Consolas", 13, "bold"),
+        command=submit
+    )
     btn.pack(pady=20)
 
     win.mainloop()
-
 
 if __name__ == "__main__":
     ask_license()
