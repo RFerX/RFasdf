@@ -397,6 +397,7 @@ class AutomationBotApp(ctk.CTk):
             if not url.startswith("http"): url = "https://" + url
             b['driver'] = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
             b['driver'].get(url)
+            self.set_browser_title(b['driver'], b['n_en'].get(), "LOGIN")
             self.after(0, lambda: [b['status_lbl'].configure(text=f"READY ➜ {b['n_en'].get()}", text_color=self.color_accent), b['b_start'].configure(state="normal")])
             while b['driver']: 
                 time.sleep(1)
@@ -415,6 +416,7 @@ class AutomationBotApp(ctk.CTk):
             if b['driver']:
                 b['driver'].get(target_url)
                 self.add_log("Navigasi ke Halaman Deposit...", b['n_en'].get(), "blue")
+                self.set_browser_title(b['driver'], b['n_en'].get(), "RUNNING")
         except Exception as e:
             self.add_log("Error !!!", "", "red")
             return
@@ -447,6 +449,8 @@ class AutomationBotApp(ctk.CTk):
         b['b_web'].configure(state="normal", fg_color=self.color_main)
         b['status_lbl'].configure(text=f"STOP ➜ {b['n_en'].get()}", text_color="#F59E0B")
         self.add_log("------------ BOT DIHENTIKAN (STOP)", b['n_en'].get(), "orange")
+        if b['driver']:
+            self.set_browser_title(b['driver'], b['n_en'].get(), "IDLE")
         self.lock_logic(rid)
 
     def lock_logic(self, rid):
@@ -600,6 +604,13 @@ class AutomationBotApp(ctk.CTk):
                     try: b['driver'].quit()
                     except: pass
             self.save_session(); self.destroy(); os._exit(0)
+            
+    def set_browser_title(self, driver, identifier, state):
+        try:
+            title = f"{identifier} - {state}"
+            driver.execute_script(f"document.title = `{title}`")
+        except:
+            pass        
 
 def ask_license():
     import customtkinter as ctk
